@@ -64,7 +64,7 @@ If you encounter any bugs, please feel free to report them [here](https://github
 ---
 
 <h3 align="center">
-  <img src="https://visit-counter.vercel.app/counter.png?page=https%3A%2F%2Fgithub.com%2FJunkBeat%2FAntiAFK-Roblox&s=40&c=00ff00&bg=00000000&no=2&ff=electrolize&tb=&ta=" alt="visits">
   <p>Made with ❤️ by JunkBeat</p>
+  <img src="https://visit-counter.vercel.app/counter.png?page=https%3A%2F%2Fgithub.com%2FJunkBeat%2FAntiAFK-Roblox&s=40&c=00ff00&bg=00000000&no=2&ff=electrolize&tb=&ta=" alt="visits">
 </h3>
 
