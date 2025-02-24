@@ -334,14 +334,14 @@ namespace RBX_AntiAFK
 
         private static void ShowAbout()
         {
-            var result = MessageBox.Show("Anti-AFK RBX by JunkBeat\nBeta: v1.0\nhttps://github.com/JunkBeat/AntiAFK-RBX\n\nOpen Github page?",
+            var result = MessageBox.Show("AntiAFK-Roblox by JunkBeat\nBeta: v1.0\nhttps://github.com/JunkBeat/AntiAFK-Roblox\n\nOpen Github page?",
                                  "Info", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
 
             if (result == DialogResult.Yes)
             {
                 Process.Start(new ProcessStartInfo
                 {
-                    FileName = "https://github.com/JunkBeat/AntiAFK-RBX",
+                    FileName = "https://github.com/JunkBeat/AntiAFK-Roblox",
                     UseShellExecute = true
                 });
             }
