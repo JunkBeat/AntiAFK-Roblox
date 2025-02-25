@@ -40,10 +40,10 @@
 ## 💤 Energy-Efficient Mode (for ~1-15 Instances): 
 - Minimize your Roblox windows.
 - Enable "Open for ... sec" to briefly set focus on the game window (useful for server restarts or game reloads).
-- Turn on "Hide window contents" to hide window's content when focused.
+- Turn on "Hide window contents" to make the window invisible while it is in focus.
 
 **✔ Best for:**
-- When you're not actively using your computer. 
+- Not very active computer use.
 - Running multiple Roblox instances (minimized windows consume fewer resources!).
 
 ## 💡 Tips on how to run multiple instances: 
