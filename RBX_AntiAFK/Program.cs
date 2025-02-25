@@ -71,7 +71,9 @@ namespace RBX_AntiAFK
     class Program
     {
         private static NotifyIcon trayIcon = new();
-        private static CancellationTokenSource cts = new();
+        private static CancellationTokenSource? cts;
+        private static SynchronizationContext? _uiContext;
+        private static Task? _afkTask;
 
         // Screensaver
         private static Form? screensaverForm;
@@ -86,6 +88,7 @@ namespace RBX_AntiAFK
         private static NumericUpDown delaySecondsNumericUpDown = new();
         private static CheckBox hideWindowContentsCheckBox = new();
 
+        // Settings
         private static Settings settings = new();
         private static bool allowNotifications = true;
 
@@ -102,6 +105,8 @@ namespace RBX_AntiAFK
                 Visible = true,
                 ContextMenuStrip = CreateTrayMenu()
             };
+
+            _uiContext = SynchronizationContext.Current;
 
             LoadSettings();
             Application.Run();
@@ -308,28 +313,50 @@ namespace RBX_AntiAFK
             }
 
             cts = new CancellationTokenSource();
-            Task.Run(() => AfkLoop(cts.Token));
 
-            UpdateUi(() =>
+            _uiContext!.Post(_ =>
             {
                 startAntiAfkMenuItem.Enabled = false;
                 stopAntiAfkMenuItem.Enabled = true;
                 trayIcon.Icon = Properties.Resources.RunningIcon;
-            });
+            }, null);
+
+            _afkTask = Task.Run(() => AfkLoop(cts.Token));
         }
 
-        private static void StopAfk()
+        private static async void StopAfk()
         {
-            cts?.Cancel();
+            if (cts != null)
+            {
+                cts.Cancel();
 
-            UpdateUi(() =>
+                try
+                {
+                    if (_afkTask != null)
+                    {
+                        await _afkTask; // Wait for the task to complete
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // Handle the cancellation (but this is already done in AfkLoop)
+                }
+                finally
+                {
+                    cts.Dispose();
+                    cts = null;
+                    _afkTask = null;
+                }
+            }
+
+            RepairWindows();
+
+            _uiContext!.Post(_ =>
             {
                 startAntiAfkMenuItem.Enabled = true;
                 stopAntiAfkMenuItem.Enabled = false;
                 trayIcon.Icon = Properties.Resources.DefaultIcon;
-            });
-
-            //MessageBox.Show("Anti-AFK stopped!", "Info", MessageBoxButtons.OK);
+            }, null);
         }
 
         private static void ShowAbout()
@@ -347,10 +374,8 @@ namespace RBX_AntiAFK
             }
         }
 
-        private static void Exit()
+        private static void RepairWindows()
         {
-            cts?.Cancel();
-
             foreach (var win in WinManager.GetAllWindows())
             {
                 if (!win.IsVisible)
@@ -361,7 +386,12 @@ namespace RBX_AntiAFK
 
                 win.SetTransparency(255);
             }
+        }
 
+        private static void Exit()
+        {
+            cts?.Cancel();
+            RepairWindows();
             SaveSettings();
             trayIcon.Visible = false;
             Application.Exit();
@@ -373,7 +403,7 @@ namespace RBX_AntiAFK
             {
                 win.Restore();
                 win.Activate();
-                Thread.Sleep(15);
+                Thread.Sleep(50);
                 KeyPresser.PressSpace();
             }
         }
@@ -382,6 +412,7 @@ namespace RBX_AntiAFK
         {
             while (!token.IsCancellationRequested)
             {
+                var userWin = WinManager.GetActiveWindow();
                 var windows = WinManager.GetAllWindows();
 
                 if (!windows.Any())
@@ -390,27 +421,37 @@ namespace RBX_AntiAFK
                     continue;
                 }
 
-                var userWin = WinManager.GetActiveWindow();
+                // Get UI settings within the UI context.  Must be synchronous.
+                string selectedAction = "";
+                bool enableDelay = false;
+                int delaySeconds = 3;
+                bool shouldHide = false;
 
-                if (enableDelayCheckBox.Checked && allowNotifications)
+                _uiContext!.Send(_ =>
                 {
-                    ShowToast("Roblox is opening soon", "Anti-AFK RBX", 2);
-                    await Sleep(3000, token);
+                    selectedAction = actionTypeComboBox.SelectedItem?.ToString() ?? "";
+                    enableDelay = enableDelayCheckBox.Checked;
+                    shouldHide = hideWindowContentsCheckBox.Checked;
+                    delaySeconds = (int)delaySecondsNumericUpDown.Value;
+                }, null);
+
+                if (enableDelay && allowNotifications)
+                {
+                    // UI interaction, so use _uiContext.Send (synchronous)
+                    _uiContext.Send(_ => ShowToast("Roblox is opening soon", "Anti-AFK RBX", 2), null);
+                    await Sleep(3000, token); // Wait for the toast to display
                 }
 
-                foreach (var robloxWin in windows)
+                foreach (var robloxWin in windows.Where(w => w.IsValidWindow))
                 {
-                    var wasMinimized = robloxWin.IsMinimized;
+                    bool wasMinimized = robloxWin.IsMinimized;
 
-                    if (enableDelayCheckBox.Checked)
+                    if (enableDelay)
                     {
-                        if (hideWindowContentsCheckBox.Checked)
-                            robloxWin.SetTransparency(0);
-
+                        if (shouldHide) robloxWin.SetTransparency(0);
                         robloxWin.Restore();
                         robloxWin.Activate();
-
-                        await Sleep(TimeSpan.FromSeconds((double)delaySecondsNumericUpDown.Value), token);
+                        await Sleep(TimeSpan.FromSeconds(delaySeconds), token);
                     }
 
                     // Perform three times for greater reliability
@@ -419,38 +460,28 @@ namespace RBX_AntiAFK
                         robloxWin.Activate();
                         await Sleep(30, token);
 
-                        PerformAction();
+                        switch (selectedAction)
+                        {
+                            case "Jump":
+                                KeyPresser.PressSpace();
+                                break;
+                            case "Camera Shift":
+                                KeyPresser.MoveCamera();
+                                break;
+                            default:
+                                Console.WriteLine($"Unknown action: {selectedAction}");
+                                KeyPresser.PressSpace();
+                                break;
+                        }
                         await Sleep(30, token);
-                    
-                        if (wasMinimized)
-                    	    robloxWin.Minimize();
+                    }
 
-		                userWin?.Activate();
-		            }
-
-		            robloxWin.SetTransparency(255);
+                    if (wasMinimized) robloxWin.Minimize();
+                    if (userWin != null && userWin.IsValidWindow) userWin?.Activate();
+                    robloxWin.SetTransparency(255);
                 }
 
                 await Sleep(TimeSpan.FromMinutes(15), token);
-            }
-        }
-
-        private static void PerformAction()
-        {
-            string selectedAction = actionTypeComboBox.SelectedItem?.ToString() ?? "";
-
-            switch (selectedAction)
-            {
-                case "Jump":
-                    KeyPresser.PressSpace();
-                    break;
-                case "Camera Shift":
-                    KeyPresser.MoveCamera();
-                    break;
-                default:
-                    Console.WriteLine($"Unknown action: {selectedAction}");
-                    KeyPresser.PressSpace();
-                    break;
             }
         }
 
@@ -491,14 +522,6 @@ namespace RBX_AntiAFK
             {
                 MessageBox.Show("Minimized Roblox window not found.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
-        }
-
-        private static void UpdateUi(Action action)
-        {
-            if (trayIcon.ContextMenuStrip!.InvokeRequired)
-                trayIcon.ContextMenuStrip.BeginInvoke(action);
-            else
-                action();
         }
 
         private static async Task Sleep(TimeSpan delay, CancellationToken token)

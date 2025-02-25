@@ -2,7 +2,7 @@
 
 public class Settings
 {
-    public string ActionType { get; set; } = "";
+    public string ActionType { get; set; } = "Jump";
     public bool EnableDelay { get; set; } = false;
     public decimal DelaySeconds { get; set; } = 3;
     public bool HideWindowContents { get; set; } = false;

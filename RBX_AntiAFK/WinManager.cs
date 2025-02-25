@@ -9,6 +9,7 @@ class WindowInfo
     public bool IsMinimized => IsIconic(Handle);
     public bool IsForeground => GetForegroundWindow() == Handle;
     public bool IsVisible => IsWindowVisible(Handle);
+    public bool IsValidWindow => IsWindow(Handle);
 
     private const int SW_SHOW = 5;
     private const int SW_RESTORE = 9;
@@ -46,6 +47,8 @@ class WindowInfo
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+    [DllImport("user32.dll")]
+    private static extern bool IsWindow(IntPtr hWnd);
 
 
     public WindowInfo(IntPtr handle, string title)
