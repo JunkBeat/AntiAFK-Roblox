@@ -24,34 +24,24 @@ namespace RBX_AntiAFK
         private const uint KEYEVENTF_KEYUP = 0x0002;
         private const byte VK_SPACE = 0x20;
         private const byte VK_MENU = 0x12;
-        private const int VK_LEFT = 0x25;
-        private const int VK_RIGHT = 0x27;
 
-        public static void PressLeftArrow()
+        public static void PressKey(byte keyCode, int delay=15)
         {
-            keybd_event(VK_LEFT, (byte)MapVirtualKey(VK_LEFT, 0), 0, 0);
-            Thread.Sleep(15);
-            keybd_event(VK_LEFT, (byte)MapVirtualKey(VK_LEFT, 0), KEYEVENTF_KEYUP, 0);
-        }
-
-        public static void PressRightArrow()
-        {
-            keybd_event(VK_RIGHT, (byte)MapVirtualKey(VK_RIGHT, 0), 0, 0);
-            Thread.Sleep(15);
-            keybd_event(VK_RIGHT, (byte)MapVirtualKey(VK_RIGHT, 0), KEYEVENTF_KEYUP, 0);
+            keybd_event(keyCode, (byte)MapVirtualKey(keyCode, 0), 0, 0);
+            if (delay > 0) Thread.Sleep(delay);
+            keybd_event(keyCode, (byte)MapVirtualKey(keyCode, 0), KEYEVENTF_KEYUP, 0);
         }
 
         public static void PressSpace()
         {
-            keybd_event(VK_SPACE, (byte)MapVirtualKey(VK_SPACE, 0), 0, 0);
-            Thread.Sleep(15);
-            keybd_event(VK_SPACE, (byte)MapVirtualKey(VK_SPACE, 0), KEYEVENTF_KEYUP, 0);
+            PressKey(VK_SPACE);
         }
+
         public static void MoveCamera()
         {
-            PressRightArrow();
+            PressKey(73); // Zoom in
             Thread.Sleep(15);
-            PressLeftArrow();
+            PressKey(79); // Zoom out
         }
 
         private static void OldPressSpace()
