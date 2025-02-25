@@ -34,7 +34,7 @@
 
 **✔ Best for:**
 - Active computer use (this mode is extremely fast!) 
-- Running multiple Roblox instances
+- Running a few Roblox instances
 
 ## 💤 Energy-Efficient Mode (for ~1-15 Instances): 
 - Minimize your Roblox windows.
@@ -43,7 +43,7 @@
 
 **✔ Best for:**
 - Not very active computer use.
-- Running multiple Roblox instances (minimized windows consume fewer resources!).
+- Running many Roblox instances (minimized windows consume fewer resources!).
 
 ## 💡 Tips on how to run multiple instances: 
 - Automatically clear memory using Mem Reduct.
