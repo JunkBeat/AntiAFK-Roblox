@@ -2,10 +2,12 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-class WindowInfo
+namespace RBX_AntiAFK.SystemInterop;
+
+class WindowInfo(IntPtr handle, string title)
 {
-    public IntPtr Handle { get; }
-    public string Title { get; }
+    public IntPtr Handle { get; } = handle;
+    public string Title { get; } = title;
     public bool IsMinimized => IsIconic(Handle);
     public bool IsForeground => GetForegroundWindow() == Handle;
     public bool IsVisible => IsWindowVisible(Handle);
@@ -16,17 +18,15 @@ class WindowInfo
     private const int SW_MAXIMIZE = 3;
     private const int SW_MINIMIZE = 6;
     private const int SW_HIDE = 0;
-    private const int SM_CXSCREEN = 0;
-    private const int SM_CYSCREEN = 1;
 
     const uint SWP_NOSIZE = 0x0001;
     const uint SWP_NOMOVE = 0x0002;
     const uint SWP_SHOWWINDOW = 0x0040;
     const uint SWP_NOACTIVATE = 0x0010;
 
-    static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
-    static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
-    static readonly IntPtr HWND_TOP = new IntPtr(0);
+    static readonly IntPtr HWND_NOTOPMOST = new(-2);
+    static readonly IntPtr HWND_TOPMOST = new(-1);
+    static readonly IntPtr HWND_TOP = new(0);
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -49,13 +49,6 @@ class WindowInfo
     static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
     [DllImport("user32.dll")]
     private static extern bool IsWindow(IntPtr hWnd);
-
-
-    public WindowInfo(IntPtr handle, string title)
-    {
-        Handle = handle;
-        Title = title;
-    }
 
     public void Show()
     {
@@ -94,7 +87,7 @@ class WindowInfo
         const int LWA_ALPHA = 0x2;
 
         var style = (int)GetWindowLong(Handle, GWL_EXSTYLE);
-        SetWindowLong(Handle, GWL_EXSTYLE, style | WS_EX_LAYERED);
+        _ = SetWindowLong(Handle, GWL_EXSTYLE, style | WS_EX_LAYERED);
         SetLayeredWindowAttributes(Handle, 0, (byte)transparency, LWA_ALPHA);
     }
 
@@ -118,7 +111,7 @@ class WinManager
 {
     [DllImport("user32.dll")]
     private static extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
@@ -136,11 +129,11 @@ class WinManager
 
     public static List<WindowInfo> GetWindowsByProcessName(string processName)
     {
-        List<WindowInfo> windows = new List<WindowInfo>();
+        List<WindowInfo> windows = [];
         Process[] processes = Process.GetProcessesByName(processName);
-        HashSet<int> processIds = new HashSet<int>(processes.Select(p => p.Id));
+        HashSet<int> processIds = new(processes.Select(p => p.Id));
 
-        EnumWindowsData data = new EnumWindowsData { ProcessIds = processIds, Windows = windows };
+        EnumWindowsData data = new() { ProcessIds = processIds, Windows = windows };
         GCHandle gch = GCHandle.Alloc(data);
 
         try
@@ -164,12 +157,12 @@ class WinManager
             return false; // If data is null, stop enumeration.
         }
 
-        GetWindowThreadProcessId(hWnd, out uint processId);
+        _ = GetWindowThreadProcessId(hWnd, out uint processId);
 
         if (data.ProcessIds.Contains((int)processId))
         {
-            StringBuilder sb = new StringBuilder(256);
-            GetWindowText(hWnd, sb, sb.Capacity);
+            StringBuilder sb = new(256);
+            _ = GetWindowText(hWnd, sb, sb.Capacity);
             string title = sb.ToString();
 
             lock (data.Windows)
@@ -209,7 +202,7 @@ class WinManager
             return null;
 
         System.Text.StringBuilder sb = new(256);
-        GetWindowText(hWnd, sb, sb.Capacity);
+        _ = GetWindowText(hWnd, sb, sb.Capacity);
         string title = sb.ToString();
 
         return new WindowInfo(hWnd, title);
