@@ -18,7 +18,6 @@
         <li>Multi-instance support</li>
         <li>Background work</li>
         <li>Hide windows option</li>
-        <li>Multiple modes</li>
         <li>Night farm screensaver</li>
         <li>Activity type selection (Jump/Camera)</li>
         <li>Auto settings save</li>
