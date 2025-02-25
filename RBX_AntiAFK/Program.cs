@@ -81,7 +81,7 @@ class Program
     // Screensaver
     private static Form? screensaverForm;
     private static Point lastMousePosition;
-    private static readonly int movementThreshold = 15; // in pixels
+    private const int movementThreshold = 15; // in pixels
 
     // GUI elements
     private static ToolStripMenuItem startAntiAfkMenuItem = new();
