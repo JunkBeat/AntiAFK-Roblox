@@ -13,6 +13,7 @@ using System.Reflection;
 using Newtonsoft.Json;
 using RBX_AntiAFK.Input;
 using RBX_AntiAFK.SystemInterop;
+using Newtonsoft.Json.Linq;
 
 namespace RBX_AntiAFK;
 
@@ -207,7 +208,7 @@ class Program
             new ToolStripMenuItem("Hide Roblox", null, (s, e) => HideRoblox()),
             new ToolStripSeparator(),
             new ToolStripMenuItem("Open Screensaver [Night Farm]", null, (s, e) => OpenScreensaver()),
-            new ToolStripMenuItem("Test Anti-AFK move", null, (s, e) => TestMove()),
+            new ToolStripMenuItem("Test Anti-AFK move", null, async (s, e) => await TestMoveAsync()),
             new ToolStripMenuItem("About", null, (s, e) => ShowAbout()),
             new ToolStripMenuItem("Exit", null, (s, e) => Exit())
         ]);
@@ -392,14 +393,18 @@ class Program
         Application.Exit();
     }
 
-    private static void TestMove()
+    private static async Task TestMoveAsync()
     {
-        foreach (var win in WinManager.GetVisibleWindows())
+        for (int i = 0; i < 3; i++)
         {
-            win.Restore();
-            win.Activate();
-            Thread.Sleep(50);
-            KeyPresser.PressSpace();
+            foreach (var win in WinManager.GetVisibleWindows())
+            {
+                if (win.IsMinimized) win.Restore();
+                win.Activate();
+                await Task.Delay(30);
+                KeyPresser.PressSpace();
+                await Task.Delay(30);
+            }
         }
     }
 
@@ -434,7 +439,7 @@ class Program
             {
                 // UI interaction, so use _uiContext.Send (synchronous)
                 _uiContext.Send(_ => ShowToast("Roblox is opening soon", "Anti-AFK RBX", 2), null);
-                await SleepAsync(3000, token); // Wait for the toast to display
+                await SleepAsync(3000, token);
             }
 
             foreach (var robloxWin in windows.Where(w => w.IsValidWindow))
@@ -444,9 +449,10 @@ class Program
                 if (enableDelay)
                 {
                     if (shouldHide) robloxWin.SetTransparency(0);
-                    robloxWin.Restore();
+                    if (wasMinimized) robloxWin.Restore();
                     robloxWin.Activate();
                     await SleepAsync(TimeSpan.FromSeconds(delaySeconds), token);
+                    if (wasMinimized) robloxWin.Minimize();
                 }
 
                 // Perform three times for greater reliability
@@ -471,14 +477,14 @@ class Program
                     await SleepAsync(30, token);
                 }
 
-                if (wasMinimized) robloxWin.Minimize();
-                if (userWin != null && userWin.IsValidWindow) userWin?.Activate();
+                if (userWin?.IsValidWindow == true) userWin.Activate();
                 robloxWin.SetTransparency(255);
             }
 
             await SleepAsync(TimeSpan.FromMinutes(15), token);
         }
     }
+
 
     private static void ShowRoblox()
     {
@@ -533,13 +539,6 @@ class Program
 
     private static async Task SleepAsync(int milliseconds, CancellationToken token)
     {
-        try
-        {
-            await Task.Delay(milliseconds, token);
-        }
-        catch (OperationCanceledException)
-        {
-            // Do nothing. The cancellation is handled by the caller.
-        }
+        await SleepAsync(TimeSpan.FromMilliseconds(milliseconds), token);
     }
 }
