@@ -161,8 +161,7 @@ class Program
                     Width = 45,
                     Minimum = 1,
                     Maximum = 60,
-                    Value = 3,
-                    Enabled = false,
+                    Value = 3
                 }),
                 new Label
                 {
@@ -173,8 +172,6 @@ class Program
                 }
             }
         };
-
-        enableDelayCheckBox.CheckedChanged += ToggleInput;
 
         hideWindowContentsCheckBox = new CheckBox
         {
@@ -216,11 +213,6 @@ class Program
         ]);
 
         return menu;
-    }
-
-    private static void ToggleInput(object? sender, EventArgs e)
-    {
-        delaySecondsNumericUpDown.Enabled = enableDelayCheckBox.Checked;
     }
 
     private static void LoadSettings()
