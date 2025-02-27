@@ -40,6 +40,7 @@
 - Minimize your Roblox windows.
 - Enable "Open for ... sec" to briefly set focus on the game window (useful for server restarts or game reloads).
 - Turn on "Hide window contents" to make the window invisible while it is in focus.
+- You’ll get a notification about 3 seconds before the window opens, so you can pause your work until focus returns to your window.
 
 **✔ Best for:**
 - Not very active computer use.
