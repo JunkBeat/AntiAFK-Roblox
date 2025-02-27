@@ -51,6 +51,7 @@
 - Keep Roblox windows minimized most of the time.
 - Reduce graphics quality in video card settings and the Roblox client settings.
 - Close unnecessary programs.
+- Use [Bloxstrap](https://github.com/bloxstraplabs/bloxstrap) for even better optimization (see setup guide [here](https://www.youtube.com/watch?v=FEiRnw8PYOk&list=LL&index=1&pp=gAQBiAQB)).
 
 ## 🌙 Night Grinding: 
 - Reduce your screen brightness.
