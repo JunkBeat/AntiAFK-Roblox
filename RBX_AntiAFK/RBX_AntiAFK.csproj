@@ -9,6 +9,20 @@
     <ApplicationIcon>Resources\default.ico</ApplicationIcon>
     <AssemblyTitle>Anti-AFK RBX</AssemblyTitle>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Authors>JunkBeat (Ambigram)</Authors>
+    <Product>AntiAFK-Roblox</Product>
+    <Description>Tray program to stay AFK in Roblox, with Multi-instances support.</Description>
+    <Copyright>Copyright © 2025 JunkBeat (Ambigram)</Copyright>
+    <PackageProjectUrl>https://github.com/JunkBeat/AntiAFK-Roblox</PackageProjectUrl>
+    <PackageIcon></PackageIcon>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Version>$(VersionPrefix)</Version>
+    <Title>AntiAFK for Roblox</Title>
+    <Company />
+    <RepositoryUrl>https://github.com/JunkBeat/AntiAFK-Roblox</RepositoryUrl>
+    <RepositoryType></RepositoryType>
+    <PackageReleaseNotes></PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
