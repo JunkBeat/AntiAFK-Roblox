@@ -357,16 +357,107 @@ class Program
 
     private static void ShowAbout()
     {
-        var result = MessageBox.Show("AntiAFK-Roblox by JunkBeat\nBeta: v1.0\nhttps://github.com/JunkBeat/AntiAFK-Roblox\n\nOpen Github page?",
-                             "Info", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
-
-        if (result == DialogResult.Yes)
+        using (Form aboutForm = new Form())
         {
-            Process.Start(new ProcessStartInfo
+            aboutForm.Text = "About AntiAFK-Roblox";
+            aboutForm.FormBorderStyle = FormBorderStyle.FixedDialog;
+            aboutForm.MaximizeBox = false;
+            aboutForm.MinimizeBox = false;
+            aboutForm.StartPosition = FormStartPosition.CenterScreen;
+            aboutForm.ClientSize = new Size(400, 160);
+            aboutForm.BackColor = Color.White;
+
+            // 1. Container for logo and text
+            Panel contentPanel = new Panel
             {
-                FileName = "https://github.com/JunkBeat/AntiAFK-Roblox",
-                UseShellExecute = true
-            });
+                Size = new Size(aboutForm.ClientSize.Width - 40, 100),
+                Location = new Point(20, 10)
+            };
+            aboutForm.Controls.Add(contentPanel);
+
+            // 2. Logo (PictureBox) on the left
+            PictureBox logoPictureBox = new PictureBox
+            {
+                Image = Properties.Resources.ProjectImage,
+                SizeMode = PictureBoxSizeMode.Zoom,
+                Size = new Size(80, 80),
+                Location = new Point(0, 10)
+            };
+            contentPanel.Controls.Add(logoPictureBox);
+
+            // 3. Container for text to the right of the logo
+            Panel textPanel = new Panel
+            {
+                Location = new Point(logoPictureBox.Right + 10, 10),
+                Size = new Size(contentPanel.Width - logoPictureBox.Width - 10, 100)
+            };
+            contentPanel.Controls.Add(textPanel);
+
+            // 4. Application name
+            Label titleLabel = new Label
+            {
+                Text = "AntiAFK-Roblox",
+                Font = new Font("Arial", 14, FontStyle.Bold),
+                AutoSize = true,
+                Location = new Point(0, 0)
+            };
+            textPanel.Controls.Add(titleLabel);
+
+            // 5. Version and author information
+            Label infoLabel = new Label
+            {
+                Text = "by JunkBeat",
+                Font = new Font("Arial", 10),
+                AutoSize = true,
+                Location = new Point(0, titleLabel.Bottom)
+            };
+            textPanel.Controls.Add(infoLabel);
+
+            Label versionLabel = new Label
+            {
+                Text = "Version: v1.0-beta",
+                Font = new Font("Arial", 10),
+                AutoSize = true,
+                Location = new Point(0, infoLabel.Bottom + 5)
+            };
+            textPanel.Controls.Add(versionLabel);
+
+            // 6. Link container (GitHub)
+            Panel githubPanel = new Panel
+            {
+                Size = new Size(150, 20),
+                Location = new Point(versionLabel.Left, versionLabel.Bottom + 8)
+            };
+            textPanel.Controls.Add(githubPanel);
+
+            // 7. GitHub (clickable link)
+            Label githubLink = new Label
+            {
+                Text = "GitHub",
+                Font = new Font("Arial", 10, FontStyle.Bold),
+                ForeColor = Color.Blue,
+                AutoSize = true,
+                Location = new Point(0, 2),
+                Cursor = Cursors.Hand
+            };
+            githubLink.Click += (sender, e) =>
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "https://github.com/JunkBeat/AntiAFK-Roblox",
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to open GitHub: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+            githubPanel.Controls.Add(githubLink);
+
+            aboutForm.ShowDialog();
         }
     }
 
