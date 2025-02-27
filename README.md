@@ -10,7 +10,7 @@
 <table>
   <tr>
     <td width="200">
-      <img src="https://github.com/user-attachments/assets/c50b5259-b326-40fe-8d5c-efc0035cc77a" alt="image" width="200">
+      <img src="https://github.com/user-attachments/assets/d8fee6fd-7edc-406e-81ba-1ccadc6de5f3" alt="image" width="200">
     </td>
     <td>
       <strong>Program Features:</strong>
