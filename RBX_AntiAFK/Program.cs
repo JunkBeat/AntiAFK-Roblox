@@ -415,7 +415,7 @@ class Program
 
         Label versionLabel = new()
         {
-            Text = "Version: v1.0-beta",
+            Text = $"Version: {Assembly.GetExecutingAssembly().GetName().Version}",
             Font = new Font("Arial", 10),
             AutoSize = true,
             Location = new Point(0, infoLabel.Bottom + 5)
