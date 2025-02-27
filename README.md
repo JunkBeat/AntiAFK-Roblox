@@ -29,7 +29,7 @@
 # 🎮 AntiAFK Modes 🎮
 
 ## 🚀 High-Performance Mode (for ~1-5 Instances): 
-- Launch your Roblox game(s).
+- Launch your Roblox windows.
 - If running multiple instances, minimize the ones you don’t need and click "Hide Roblox"—they'll maximize and disappear from the taskbar!
 
 **✔ Best for:**
