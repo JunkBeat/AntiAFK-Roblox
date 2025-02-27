@@ -355,6 +355,13 @@ class Program
         }, null);
     }
 
+    public static string GetAssemblyVersion<T>()
+    {
+        var assembly = typeof(T).Assembly;
+        var version = assembly.GetName().Version;
+        return version?.ToString() ?? "";
+    }
+
     private static void ShowAbout()
     {
         using Form aboutForm = new();
@@ -404,21 +411,21 @@ class Program
         textPanel.Controls.Add(titleLabel);
 
         // 5. Version and author information
-        Label infoLabel = new()
+        Label authorLabel = new()
         {
             Text = "by JunkBeat",
             Font = new Font("Arial", 10),
             AutoSize = true,
             Location = new Point(0, titleLabel.Bottom)
         };
-        textPanel.Controls.Add(infoLabel);
+        textPanel.Controls.Add(authorLabel);
 
         Label versionLabel = new()
         {
-            Text = $"Version: {Assembly.GetExecutingAssembly().GetName().Version}",
+            Text = $"Version: {GetAssemblyVersion<Program>()}",
             Font = new Font("Arial", 10),
             AutoSize = true,
-            Location = new Point(0, infoLabel.Bottom + 5)
+            Location = new Point(0, authorLabel.Bottom + 5)
         };
         textPanel.Controls.Add(versionLabel);
 
