@@ -46,12 +46,13 @@
 - Not very active computer use.
 - Running many Roblox instances (minimized windows consume fewer resources!).
 
-## 💡 Tips on how to run multiple instances: 
+## 💡 Tips for launching a large number of instances:: 
 - Automatically clear memory using Mem Reduct.
 - Lower FPS (FPS Unlocker, Roblox Account Manager).
 - Keep Roblox windows minimized most of the time.
-- Reduce graphics quality in video card settings and the Roblox client settings.
+- Lower graphics settings in both the video card control panel and the Roblox client.
 - Close unnecessary programs.
+- Monitor the Task Manager to ensure CPU usage does not exceed 90-95%.
 - Use [Bloxstrap](https://github.com/bloxstraplabs/bloxstrap) for even better optimization (see setup guide [here](https://www.youtube.com/watch?v=FEiRnw8PYOk&list=LL&index=1&pp=gAQBiAQB)).
 
 ## 🌙 Night Grinding: 
