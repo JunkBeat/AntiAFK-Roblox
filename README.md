@@ -46,7 +46,7 @@
 - Not very active computer use.
 - Running many Roblox instances (minimized windows consume fewer resources!).
 
-## 💡 Tips for launching a large number of instances:: 
+## 💡 Tips for launching a large number of instances: 
 - Automatically clear memory using Mem Reduct.
 - Lower FPS (FPS Unlocker, Roblox Account Manager).
 - Keep Roblox windows minimized most of the time.
