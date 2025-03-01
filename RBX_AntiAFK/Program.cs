@@ -190,7 +190,6 @@ class Program
         {
             Text = "Hide window contents",
             AutoSize = true,
-            Margin = new Padding(5, 0, 0, 0),
             Dock = DockStyle.Top
         };
 
@@ -203,6 +202,7 @@ class Program
 
         actionRowPanel.Margin = new Padding(2, 0, 0, 0);
         maximizeRowPanel.Margin = new Padding(2, 0, 0, 0);
+        hideWindowContentsCheckBox.Margin = new Padding(5, 0, 0, 0);
 
 
         var menu = new ContextMenuStrip();
@@ -374,111 +374,65 @@ class Program
     {
         var assembly = typeof(T).Assembly;
         var version = assembly.GetName().Version;
-        return version?.ToString() ?? "";
+        return version?.ToString() ?? "Unknown";
     }
 
     private static void ShowAbout()
     {
-        using Form aboutForm = new();
-
-        aboutForm.Text = "About AntiAFK-Roblox";
-        aboutForm.FormBorderStyle = FormBorderStyle.FixedDialog;
-        aboutForm.MaximizeBox = false;
-        aboutForm.MinimizeBox = false;
-        aboutForm.StartPosition = FormStartPosition.CenterScreen;
-        aboutForm.ClientSize = new Size(400, 160);
-        aboutForm.BackColor = Color.White;
-
-        // 1. Container for logo and text
-        Panel contentPanel = new()
+        var aboutForm = new Form
         {
-            Size = new Size(aboutForm.ClientSize.Width - 40, 100),
-            Location = new Point(20, 10)
+            Text = "About",
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false,
+            MinimizeBox = false,
+            StartPosition = FormStartPosition.CenterScreen,
+            ClientSize = new Size(400, 160),
+            BackColor = Color.White
         };
+
+        Panel contentPanel = new() { Size = new(360, 140), Location = new(20, 10) };
         aboutForm.Controls.Add(contentPanel);
 
-        // 2. Logo (PictureBox) on the left
-        PictureBox logoPictureBox = new()
+        contentPanel.Controls.Add(new PictureBox
         {
             Image = Properties.Resources.ProjectImage,
             SizeMode = PictureBoxSizeMode.Zoom,
-            Size = new Size(80, 80),
-            Location = new Point(0, 10)
-        };
-        contentPanel.Controls.Add(logoPictureBox);
+            Size = new(100, 100),
+            Location = new(20, 10)
+        });
 
-        // 3. Container for text to the right of the logo
-        Panel textPanel = new()
-        {
-            Location = new Point(logoPictureBox.Right + 10, 10),
-            Size = new Size(contentPanel.Width - logoPictureBox.Width - 10, 100)
-        };
+        Panel textPanel = new() { Size = new(270, 120), Location = new(150, 10) };
         contentPanel.Controls.Add(textPanel);
 
-        // 4. Application name
-        Label titleLabel = new()
-        {
-            Text = "AntiAFK-Roblox",
-            Font = new Font("Arial", 14, FontStyle.Bold),
-            AutoSize = true,
-            Location = new Point(0, 0)
-        };
-        textPanel.Controls.Add(titleLabel);
+        void AddLabel(string text, Font font, int yOffset)
+            => textPanel.Controls.Add(new Label
+            {
+                Text = text,
+                Font = font,
+                AutoSize = true,
+                Location = new(0, yOffset)
+            });
 
-        // 5. Version and author information
-        Label authorLabel = new()
-        {
-            Text = "by JunkBeat",
-            Font = new Font("Arial", 10),
-            AutoSize = true,
-            Location = new Point(0, titleLabel.Bottom)
-        };
-        textPanel.Controls.Add(authorLabel);
+        AddLabel("AntiAFK-Roblox", new Font("Arial", 18, FontStyle.Bold), 0);
+        AddLabel("by JunkBeat", new Font("Arial", 12), 27);
+        AddLabel($"Version: {GetAssemblyVersion<Program>()}", new Font("Arial", 12), 60);
 
-        Label versionLabel = new()
-        {
-            Text = $"Version: {GetAssemblyVersion<Program>()}",
-            Font = new Font("Arial", 10),
-            AutoSize = true,
-            Location = new Point(0, authorLabel.Bottom + 5)
-        };
-        textPanel.Controls.Add(versionLabel);
-
-        // 6. Link container (GitHub)
-        Panel githubPanel = new()
-        {
-            Size = new Size(150, 20),
-            Location = new Point(versionLabel.Left, versionLabel.Bottom + 8)
-        };
-        textPanel.Controls.Add(githubPanel);
-
-        // 7. GitHub (clickable link)
         Label githubLink = new()
         {
             Text = "GitHub",
-            Font = new Font("Arial", 10, FontStyle.Bold),
+            Font = new Font("Arial", 12, FontStyle.Bold),
             ForeColor = Color.Blue,
             AutoSize = true,
-            Location = new Point(0, 2),
+            Location = new(0, 90),
             Cursor = Cursors.Hand
         };
-        githubLink.Click += (sender, e) =>
+        githubLink.Click += (_, _) => Process.Start(new ProcessStartInfo
         {
-            try
-            {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = "https://github.com/JunkBeat/AntiAFK-Roblox",
-                    UseShellExecute = true
-                });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to open GitHub: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        };
-        githubPanel.Controls.Add(githubLink);
+            FileName = "https://github.com/JunkBeat/AntiAFK-Roblox",
+            UseShellExecute = true
+        });
 
+        textPanel.Controls.Add(githubLink);
         aboutForm.ShowDialog();
     }
 
