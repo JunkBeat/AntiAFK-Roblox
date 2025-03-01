@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace RBX_AntiAFK.Input;
 
@@ -19,23 +20,33 @@ public class KeyPresser
     private const byte VK_SPACE = 0x20;
     private const byte VK_MENU = 0x12;
 
-    public static void PressKey(byte keyCode, int delay = 15)
+    public static void PressKey(byte keyCode, int delay = 45)
     {
         keybd_event(keyCode, (byte)MapVirtualKey(keyCode, 0), 0, 0);
-        if (delay > 0) Thread.Sleep(delay);
+
+        if (delay > 0)
+        {
+            Thread.Sleep(delay);
+        }
+
         keybd_event(keyCode, (byte)MapVirtualKey(keyCode, 0), KEYEVENTF_KEYUP, 0);
     }
 
-    public static void PressSpace()
+    public static void PressKey(Keys key, int delay = 45)
     {
-        PressKey(VK_SPACE);
+        PressKey((byte)key, delay);
     }
 
-    public static void MoveCamera()
+    public static void PressSpace(int delay = 45)
     {
-        PressKey(73); // Zoom in
-        Thread.Sleep(15);
-        PressKey(79); // Zoom out
+        PressKey(Keys.Space, delay);
+    }
+
+    public static void MoveCamera(int delay = 45, int delayBetween = 30)
+    {
+        PressKey(Keys.I, delay); // Zoom in
+        Thread.Sleep(delayBetween);
+        PressKey(Keys.O, delay); // Zoom out
     }
 
     private static void OldPressSpace()

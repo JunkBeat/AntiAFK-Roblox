@@ -13,64 +13,8 @@ using System.Reflection;
 using Newtonsoft.Json;
 using RBX_AntiAFK.Input;
 using RBX_AntiAFK.SystemInterop;
-using Newtonsoft.Json.Linq;
 
 namespace RBX_AntiAFK;
-
-public class Settings
-{
-    public string ActionType { get; set; } = "Jump";
-    public bool EnableDelay { get; set; } = false;
-    public decimal DelaySeconds { get; set; } = 3;
-    public bool HideWindowContents { get; set; } = false;
-
-    private const string SettingsFile = "settings.json";
-
-    public void Load()
-    {
-        try
-        {
-            if (File.Exists(SettingsFile))
-            {
-                var json = File.ReadAllText(SettingsFile);
-                var loadedSettings = JsonConvert.DeserializeObject<Settings>(json);
-
-                if (loadedSettings != null)
-                {
-                    ActionType = loadedSettings.ActionType;
-                    EnableDelay = loadedSettings.EnableDelay;
-                    DelaySeconds = loadedSettings.DelaySeconds;
-                    HideWindowContents = loadedSettings.HideWindowContents;
-                }
-                else
-                {
-                    Save();
-                }
-            }
-            else
-            {
-                Save();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading settings: {ex.Message}");
-        }
-    }
-
-    public void Save()
-    {
-        try
-        {
-            var json = JsonConvert.SerializeObject(this, Newtonsoft.Json.Formatting.Indented);
-            File.WriteAllText(SettingsFile, json);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error saving settings: {ex.Message}");
-        }
-    }
-}
 
 class Program
 {
@@ -88,13 +32,17 @@ class Program
     private static ToolStripMenuItem startAntiAfkMenuItem = new();
     private static ToolStripMenuItem stopAntiAfkMenuItem = new();
     private static ComboBox actionTypeComboBox = new();
-    private static CheckBox enableDelayCheckBox = new();
-    private static NumericUpDown delaySecondsNumericUpDown = new();
+    private static CheckBox enableMaximizationCheckBox = new();
+    private static NumericUpDown maximizationDelayNumericUpDown = new();
     private static CheckBox hideWindowContentsCheckBox = new();
+    //private static NumericUpDown windowDelayNumericUpDown = new();
+    //private static NumericUpDown keypressDelayNumericUpDown = new();
 
     // Settings
     private static readonly Settings settings = new();
     private static bool allowNotifications = true;
+    private static int windowDelay = 0; // ms
+    private static int keypressDelay = 0; // ms
 
     [STAThread]
     static void Main()
@@ -142,7 +90,71 @@ class Program
             }
         };
 
-        var delayRowPanel = new FlowLayoutPanel
+        //var windowDelayRowPanel = new FlowLayoutPanel
+        //{
+        //    AutoSize = true,
+        //    FlowDirection = FlowDirection.LeftToRight,
+        //    WrapContents = false,
+        //    Dock = DockStyle.Top,
+        //    Controls =
+        //    {
+        //        new Label
+        //        {
+        //            Text = "Window delay:",
+        //            TextAlign = ContentAlignment.MiddleLeft,
+        //            AutoSize = true,
+        //            Dock = DockStyle.Left
+        //        },
+        //        (windowDelayNumericUpDown = new NumericUpDown
+        //        {
+        //            Width = 45,
+        //            Minimum = 15,
+        //            Maximum = 1000,
+        //            Value = 30
+        //        }),
+        //        new Label
+        //        {
+        //            Text = "ms",
+        //            TextAlign = ContentAlignment.MiddleLeft,
+        //            AutoSize = true,
+        //            Dock = DockStyle.Left
+        //        }
+        //    }
+        //};
+
+        //var keypressDelayRowPanel = new FlowLayoutPanel
+        //{
+        //    AutoSize = true,
+        //    FlowDirection = FlowDirection.LeftToRight,
+        //    WrapContents = false,
+        //    Dock = DockStyle.Top,
+        //    Controls =
+        //    {
+        //        new Label
+        //        {
+        //            Text = "Keypress delay:",
+        //            TextAlign = ContentAlignment.MiddleLeft,
+        //            AutoSize = true,
+        //            Dock = DockStyle.Left
+        //        },
+        //        (keypressDelayNumericUpDown = new NumericUpDown
+        //        {
+        //            Width = 45,
+        //            Minimum = 15,
+        //            Maximum = 1000,
+        //            Value = 45
+        //        }),
+        //        new Label
+        //        {
+        //            Text = "ms",
+        //            TextAlign = ContentAlignment.MiddleLeft,
+        //            AutoSize = true,
+        //            Dock = DockStyle.Left
+        //        }
+        //    }
+        //};
+
+        var maximizeRowPanel = new FlowLayoutPanel
         {
             AutoSize = true,
             FlowDirection = FlowDirection.LeftToRight,
@@ -150,14 +162,14 @@ class Program
             Dock = DockStyle.Top,
             Controls =
             {
-                (enableDelayCheckBox = new CheckBox
+                (enableMaximizationCheckBox = new CheckBox
                 {
                     Text = "Open for",
                     TextAlign = ContentAlignment.MiddleLeft,
                     AutoSize = true,
                     Dock = DockStyle.Left
                 }),
-                (delaySecondsNumericUpDown = new NumericUpDown
+                (maximizationDelayNumericUpDown = new NumericUpDown
                 {
                     Width = 45,
                     Minimum = 1,
@@ -186,11 +198,11 @@ class Program
         {
             AutoSize = true,
             FlowDirection = FlowDirection.TopDown,
-            Controls = { actionRowPanel, delayRowPanel, hideWindowContentsCheckBox }
+            Controls = { actionRowPanel, maximizeRowPanel, hideWindowContentsCheckBox }
         };
 
         actionRowPanel.Margin = new Padding(2, 0, 0, 0);
-        delayRowPanel.Margin = new Padding(2, 0, 0, 0);
+        maximizeRowPanel.Margin = new Padding(2, 0, 0, 0);
 
 
         var menu = new ContextMenuStrip();
@@ -219,9 +231,9 @@ class Program
     private static void LoadSettings()
     {
         settings.Load();
-        enableDelayCheckBox.Checked = settings.EnableDelay;
-        delaySecondsNumericUpDown.Value = settings.DelaySeconds;
-        hideWindowContentsCheckBox.Checked = settings.HideWindowContents;
+        enableMaximizationCheckBox.Checked = settings.EnableWindowMaximization;
+        maximizationDelayNumericUpDown.Value = settings.WindowMaximizationDelaySeconds;
+        hideWindowContentsCheckBox.Checked = settings.HideWindowContentsOnMaximizing;
 
         int index = actionTypeComboBox.Items.IndexOf(settings.ActionType);
 
@@ -229,13 +241,16 @@ class Program
         {
             actionTypeComboBox.SelectedIndex = index;
         }
+
+        windowDelay = settings.DelayBeforeWindowInteractionMilliseconds;
+        keypressDelay = settings.DelayBetweenKeyPressMilliseconds;
     }
 
     private static void SaveSettings()
     {
-        settings.EnableDelay = enableDelayCheckBox.Checked;
-        settings.DelaySeconds = delaySecondsNumericUpDown.Value;
-        settings.HideWindowContents = hideWindowContentsCheckBox.Checked;
+        settings.EnableWindowMaximization = enableMaximizationCheckBox.Checked;
+        settings.WindowMaximizationDelaySeconds = maximizationDelayNumericUpDown.Value;
+        settings.HideWindowContentsOnMaximizing = hideWindowContentsCheckBox.Checked;
         settings.ActionType = actionTypeComboBox.SelectedItem?.ToString() ?? "";
         settings.Save();
     }
@@ -498,9 +513,9 @@ class Program
             {
                 if (win.IsMinimized) win.Restore();
                 win.Activate();
-                await Task.Delay(30);
-                KeyPresser.PressSpace();
-                await Task.Delay(30);
+                await Task.Delay(windowDelay);
+                KeyPresser.PressSpace(keypressDelay);
+                await Task.Delay(windowDelay);
             }
         }
     }
@@ -520,19 +535,19 @@ class Program
 
             // Get UI settings within the UI context.  Must be synchronous.
             string selectedAction = "";
-            bool enableDelay = false;
-            int delaySeconds = 3;
+            bool enableMaximizing = false;
+            int maximizingDelaySec = 3;
             bool shouldHide = false;
 
             _uiContext!.Send(_ =>
             {
                 selectedAction = actionTypeComboBox.SelectedItem?.ToString() ?? "";
-                enableDelay = enableDelayCheckBox.Checked;
+                enableMaximizing = enableMaximizationCheckBox.Checked;
+                maximizingDelaySec = (int)maximizationDelayNumericUpDown.Value;
                 shouldHide = hideWindowContentsCheckBox.Checked;
-                delaySeconds = (int)delaySecondsNumericUpDown.Value;
             }, null);
 
-            if (enableDelay && allowNotifications)
+            if (enableMaximizing && allowNotifications)
             {
                 // UI interaction, so use _uiContext.Send (synchronous)
                 _uiContext.Send(_ => ShowToast("Roblox is opening soon", "Anti-AFK RBX", 2), null);
@@ -543,12 +558,12 @@ class Program
             {
                 bool wasMinimized = robloxWin.IsMinimized;
 
-                if (enableDelay)
+                if (enableMaximizing)
                 {
                     if (shouldHide) robloxWin.SetTransparency(0);
                     if (wasMinimized) robloxWin.Restore();
                     robloxWin.Activate();
-                    await SleepAsync(TimeSpan.FromSeconds(delaySeconds), token);
+                    await SleepAsync(TimeSpan.FromSeconds(maximizingDelaySec), token);
                     if (wasMinimized) robloxWin.Minimize();
                 }
 
@@ -556,22 +571,22 @@ class Program
                 for (int i = 0; i < 3; i++)
                 {
                     robloxWin.Activate();
-                    await SleepAsync(30, token);
+                    await SleepAsync(windowDelay, token);
 
                     switch (selectedAction)
                     {
                         case "Jump":
-                            KeyPresser.PressSpace();
+                            KeyPresser.PressSpace(keypressDelay);
                             break;
                         case "Camera Shift":
-                            KeyPresser.MoveCamera();
+                            KeyPresser.MoveCamera(keypressDelay, windowDelay);
                             break;
                         default:
                             Console.WriteLine($"Unknown action: {selectedAction}");
                             KeyPresser.PressSpace();
                             break;
                     }
-                    await SleepAsync(30, token);
+                    await SleepAsync(windowDelay, token);
                 }
 
                 if (userWin?.IsValidWindow == true) userWin.Activate();
