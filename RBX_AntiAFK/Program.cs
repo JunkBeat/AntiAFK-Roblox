@@ -41,7 +41,7 @@ class Program
     // Settings
     private static readonly Settings settings = new();
     private static bool allowNotifications = true;
-    private static int windowDelay = 0; // ms
+    private static int interactionDelay = 0; // ms
     private static int keypressDelay = 0; // ms
 
     [STAThread]
@@ -242,7 +242,7 @@ class Program
             actionTypeComboBox.SelectedIndex = index;
         }
 
-        windowDelay = settings.DelayBeforeWindowInteractionMilliseconds;
+        interactionDelay = settings.DelayBeforeWindowInteractionMilliseconds;
         keypressDelay = settings.DelayBetweenKeyPressMilliseconds;
     }
 
@@ -513,9 +513,9 @@ class Program
             {
                 if (win.IsMinimized) win.Restore();
                 win.Activate();
-                await Task.Delay(windowDelay);
+                await Task.Delay(interactionDelay);
                 KeyPresser.PressSpace(keypressDelay);
-                await Task.Delay(windowDelay);
+                await Task.Delay(interactionDelay);
             }
         }
     }
@@ -535,19 +535,19 @@ class Program
 
             // Get UI settings within the UI context.  Must be synchronous.
             string selectedAction = "";
-            bool enableMaximizing = false;
-            int maximizingDelaySec = 3;
-            bool shouldHide = false;
+            bool enableMaximization = false;
+            int maximizationDelaySec = 3;
+            bool shouldHideWindow = false;
 
             _uiContext!.Send(_ =>
             {
                 selectedAction = actionTypeComboBox.SelectedItem?.ToString() ?? "";
-                enableMaximizing = enableMaximizationCheckBox.Checked;
-                maximizingDelaySec = (int)maximizationDelayNumericUpDown.Value;
-                shouldHide = hideWindowContentsCheckBox.Checked;
+                enableMaximization = enableMaximizationCheckBox.Checked;
+                maximizationDelaySec = (int)maximizationDelayNumericUpDown.Value;
+                shouldHideWindow = hideWindowContentsCheckBox.Checked;
             }, null);
 
-            if (enableMaximizing && allowNotifications)
+            if (enableMaximization && allowNotifications)
             {
                 // UI interaction, so use _uiContext.Send (synchronous)
                 _uiContext.Send(_ => ShowToast("Roblox is opening soon", "Anti-AFK RBX", 2), null);
@@ -558,12 +558,12 @@ class Program
             {
                 bool wasMinimized = robloxWin.IsMinimized;
 
-                if (enableMaximizing)
+                if (enableMaximization)
                 {
-                    if (shouldHide) robloxWin.SetTransparency(0);
+                    if (shouldHideWindow) robloxWin.SetTransparency(0);
                     if (wasMinimized) robloxWin.Restore();
                     robloxWin.Activate();
-                    await SleepAsync(TimeSpan.FromSeconds(maximizingDelaySec), token);
+                    await SleepAsync(TimeSpan.FromSeconds(maximizationDelaySec), token);
                     if (wasMinimized) robloxWin.Minimize();
                 }
 
@@ -571,7 +571,7 @@ class Program
                 for (int i = 0; i < 3; i++)
                 {
                     robloxWin.Activate();
-                    await SleepAsync(windowDelay, token);
+                    await SleepAsync(interactionDelay, token);
 
                     switch (selectedAction)
                     {
@@ -579,14 +579,14 @@ class Program
                             KeyPresser.PressSpace(keypressDelay);
                             break;
                         case "Camera Shift":
-                            KeyPresser.MoveCamera(keypressDelay, windowDelay);
+                            KeyPresser.MoveCamera(keypressDelay, interactionDelay);
                             break;
                         default:
                             Console.WriteLine($"Unknown action: {selectedAction}");
                             KeyPresser.PressSpace();
                             break;
                     }
-                    await SleepAsync(windowDelay, token);
+                    await SleepAsync(interactionDelay, token);
                 }
 
                 if (userWin?.IsValidWindow == true) userWin.Activate();
