@@ -15,9 +15,9 @@
     <Copyright>Copyright © 2025 JunkBeat (Ambigram)</Copyright>
     <PackageProjectUrl>https://github.com/JunkBeat/AntiAFK-Roblox</PackageProjectUrl>
     <PackageIcon></PackageIcon>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
-    <FileVersion>1.1.0.0</FileVersion>
-    <Version>1.1.0-beta1</Version>
+    <AssemblyVersion>1.2.0.0</AssemblyVersion>
+    <FileVersion>1.2.0.0</FileVersion>
+    <Version>1.2.0-beta1</Version>
     <Title>AntiAFK for Roblox</Title>
     <Company />
     <RepositoryUrl>https://github.com/JunkBeat/AntiAFK-Roblox</RepositoryUrl>
