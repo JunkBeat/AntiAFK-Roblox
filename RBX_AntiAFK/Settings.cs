@@ -1,17 +1,21 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RBX_AntiAFK.Enums;
 
 namespace RBX_AntiAFK;
 
 public class Settings
 {
-    public string ActionType { get; set; } = "Jump";
+    [JsonConverter(typeof(StringEnumConverter))]
+    public ActionTypeEnum ActionType { get; set; } = ActionTypeEnum.Jump;
+
     public bool EnableWindowMaximization { get; set; } = false;
-    public decimal WindowMaximizationDelaySeconds { get; set; } = 3;
+    public int WindowMaximizationDelaySeconds { get; set; } = 3;
     public bool HideWindowContentsOnMaximizing { get; set; } = false;
     public int DelayBeforeWindowInteractionMilliseconds { get; set; } = 50;
     public int DelayBetweenKeyPressMilliseconds { get; set; } = 45;

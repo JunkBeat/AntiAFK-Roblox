@@ -10,9 +10,9 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.Runtime.Versioning;
 using System.Reflection;
-using Newtonsoft.Json;
 using RBX_AntiAFK.Input;
 using RBX_AntiAFK.SystemInterop;
+using RBX_AntiAFK.Enums;
 
 namespace RBX_AntiAFK;
 
@@ -22,6 +22,7 @@ class Program
     private static CancellationTokenSource? cts;
     private static SynchronizationContext? _uiContext;
     private static Task? _afkTask;
+    private static readonly object settingsLock = new();
 
     // Screensaver
     private static Form? screensaverForm;
@@ -35,14 +36,11 @@ class Program
     private static CheckBox enableMaximizationCheckBox = new();
     private static NumericUpDown maximizationDelayNumericUpDown = new();
     private static CheckBox hideWindowContentsCheckBox = new();
-    //private static NumericUpDown windowDelayNumericUpDown = new();
-    //private static NumericUpDown keypressDelayNumericUpDown = new();
 
     // Settings
     private static readonly Settings settings = new();
     private static bool allowNotifications = true;
-    private static int interactionDelay = 0; // ms
-    private static int keypressDelay = 0; // ms
+    private static int interactionDelay = 0;
 
     [STAThread]
     static void Main()
@@ -60,6 +58,7 @@ class Program
 
         _uiContext = SynchronizationContext.Current;
 
+        InitializeEvents();
         LoadSettings();
         Application.Run();
     }
@@ -82,77 +81,17 @@ class Program
                 },
                 (actionTypeComboBox = new ComboBox
                 {
-                    Items = { "Jump", "Camera Shift" },
                     DropDownStyle = ComboBoxStyle.DropDownList,
                     Width = 100,
-                    SelectedIndex = 0
+                    SelectedItem = ActionTypeEnum.CameraShift
                 })
             }
         };
 
-        //var windowDelayRowPanel = new FlowLayoutPanel
-        //{
-        //    AutoSize = true,
-        //    FlowDirection = FlowDirection.LeftToRight,
-        //    WrapContents = false,
-        //    Dock = DockStyle.Top,
-        //    Controls =
-        //    {
-        //        new Label
-        //        {
-        //            Text = "Window delay:",
-        //            TextAlign = ContentAlignment.MiddleLeft,
-        //            AutoSize = true,
-        //            Dock = DockStyle.Left
-        //        },
-        //        (windowDelayNumericUpDown = new NumericUpDown
-        //        {
-        //            Width = 45,
-        //            Minimum = 15,
-        //            Maximum = 1000,
-        //            Value = 30
-        //        }),
-        //        new Label
-        //        {
-        //            Text = "ms",
-        //            TextAlign = ContentAlignment.MiddleLeft,
-        //            AutoSize = true,
-        //            Dock = DockStyle.Left
-        //        }
-        //    }
-        //};
-
-        //var keypressDelayRowPanel = new FlowLayoutPanel
-        //{
-        //    AutoSize = true,
-        //    FlowDirection = FlowDirection.LeftToRight,
-        //    WrapContents = false,
-        //    Dock = DockStyle.Top,
-        //    Controls =
-        //    {
-        //        new Label
-        //        {
-        //            Text = "Keypress delay:",
-        //            TextAlign = ContentAlignment.MiddleLeft,
-        //            AutoSize = true,
-        //            Dock = DockStyle.Left
-        //        },
-        //        (keypressDelayNumericUpDown = new NumericUpDown
-        //        {
-        //            Width = 45,
-        //            Minimum = 15,
-        //            Maximum = 1000,
-        //            Value = 45
-        //        }),
-        //        new Label
-        //        {
-        //            Text = "ms",
-        //            TextAlign = ContentAlignment.MiddleLeft,
-        //            AutoSize = true,
-        //            Dock = DockStyle.Left
-        //        }
-        //    }
-        //};
+        foreach (ActionTypeEnum enumValue in Enum.GetValues(typeof(ActionTypeEnum)))
+        {
+            actionTypeComboBox.Items.Add(enumValue);
+        }
 
         var maximizeRowPanel = new FlowLayoutPanel
         {
@@ -228,31 +167,60 @@ class Program
         return menu;
     }
 
+    private static void InitializeEvents()
+    {
+        enableMaximizationCheckBox.CheckedChanged += OnSettingsChanged;
+        maximizationDelayNumericUpDown.ValueChanged += OnSettingsChanged;
+        hideWindowContentsCheckBox.CheckedChanged += OnSettingsChanged;
+        actionTypeComboBox.SelectedIndexChanged += OnSettingsChanged;
+    }
+
+    private static void OnSettingsChanged(object? sender, EventArgs e)
+    {
+        lock (settingsLock)
+        {
+            settings.EnableWindowMaximization = enableMaximizationCheckBox.Checked;
+            settings.WindowMaximizationDelaySeconds = (int)maximizationDelayNumericUpDown.Value;
+            settings.HideWindowContentsOnMaximizing = hideWindowContentsCheckBox.Checked;
+            settings.ActionType = (ActionTypeEnum?)actionTypeComboBox?.SelectedItem ?? ActionTypeEnum.Jump;
+        }
+    }
+
     private static void LoadSettings()
     {
-        settings.Load();
-        enableMaximizationCheckBox.Checked = settings.EnableWindowMaximization;
-        maximizationDelayNumericUpDown.Value = settings.WindowMaximizationDelaySeconds;
-        hideWindowContentsCheckBox.Checked = settings.HideWindowContentsOnMaximizing;
-
-        int index = actionTypeComboBox.Items.IndexOf(settings.ActionType);
-
-        if (index != -1)
+        lock (settingsLock)
         {
-            actionTypeComboBox.SelectedIndex = index;
-        }
+            settings.Load();
+            enableMaximizationCheckBox.Checked = settings.EnableWindowMaximization;
+            maximizationDelayNumericUpDown.Value = settings.WindowMaximizationDelaySeconds;
+            hideWindowContentsCheckBox.Checked = settings.HideWindowContentsOnMaximizing;
 
-        interactionDelay = settings.DelayBeforeWindowInteractionMilliseconds;
-        keypressDelay = settings.DelayBetweenKeyPressMilliseconds;
+            int index = actionTypeComboBox.Items.IndexOf(settings.ActionType);
+
+            if (index != -1)
+            {
+                actionTypeComboBox.SelectedIndex = index;
+            }
+
+            KeyPresser.keypressDelay = settings.DelayBetweenKeyPressMilliseconds;
+            KeyPresser.interactionDelay = interactionDelay = settings.DelayBeforeWindowInteractionMilliseconds;
+        }
     }
 
     private static void SaveSettings()
     {
-        settings.EnableWindowMaximization = enableMaximizationCheckBox.Checked;
-        settings.WindowMaximizationDelaySeconds = maximizationDelayNumericUpDown.Value;
-        settings.HideWindowContentsOnMaximizing = hideWindowContentsCheckBox.Checked;
-        settings.ActionType = actionTypeComboBox.SelectedItem?.ToString() ?? "";
-        settings.Save();
+        lock (settingsLock)
+        {
+            settings.Save();
+        }
+    }
+
+    private static T ReadSetting<T>(Func<Settings, T> readAction)
+    {
+        lock (settingsLock)
+        {
+            return readAction(settings);
+        }
     }
 
     private static void ShowToast(string message, string title, int duration, ToolTipIcon icon = ToolTipIcon.Info)
@@ -468,7 +436,7 @@ class Program
                 if (win.IsMinimized) win.Restore();
                 win.Activate();
                 await Task.Delay(interactionDelay);
-                KeyPresser.PressSpace(keypressDelay);
+                KeyPresser.PressSpace();
                 await Task.Delay(interactionDelay);
             }
         }
@@ -487,24 +455,22 @@ class Program
                 continue;
             }
 
-            // Get UI settings within the UI context.  Must be synchronous.
-            string selectedAction = "";
+            ActionTypeEnum selectedAction = ActionTypeEnum.Jump;
             bool enableMaximization = false;
-            int maximizationDelaySec = 3;
+            int maximizationDelaySec = 0;
             bool shouldHideWindow = false;
 
-            _uiContext!.Send(_ =>
+            await Task.Run(() =>
             {
-                selectedAction = actionTypeComboBox.SelectedItem?.ToString() ?? "";
-                enableMaximization = enableMaximizationCheckBox.Checked;
-                maximizationDelaySec = (int)maximizationDelayNumericUpDown.Value;
-                shouldHideWindow = hideWindowContentsCheckBox.Checked;
-            }, null);
+                selectedAction = ReadSetting(s => s.ActionType);
+                enableMaximization = ReadSetting(s => s.EnableWindowMaximization);
+                maximizationDelaySec = ReadSetting(s => s.WindowMaximizationDelaySeconds);
+                shouldHideWindow = ReadSetting(s => s.HideWindowContentsOnMaximizing);
+            });
 
             if (enableMaximization && allowNotifications)
             {
-                // UI interaction, so use _uiContext.Send (synchronous)
-                _uiContext.Send(_ => ShowToast("Roblox is opening soon", "Anti-AFK RBX", 2), null);
+                _uiContext!.Send(_ => ShowToast("Roblox is opening soon", "Anti-AFK RBX", 2), null);
                 await SleepAsync(3000, token);
             }
 
@@ -529,11 +495,11 @@ class Program
 
                     switch (selectedAction)
                     {
-                        case "Jump":
-                            KeyPresser.PressSpace(keypressDelay);
+                        case ActionTypeEnum.Jump:
+                            KeyPresser.PressSpace();
                             break;
-                        case "Camera Shift":
-                            KeyPresser.MoveCamera(keypressDelay, interactionDelay);
+                        case ActionTypeEnum.CameraShift:
+                            KeyPresser.MoveCamera();
                             break;
                         default:
                             Console.WriteLine($"Unknown action: {selectedAction}");

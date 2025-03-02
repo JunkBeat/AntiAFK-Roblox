@@ -20,15 +20,13 @@ public class KeyPresser
     private const byte VK_SPACE = 0x20;
     private const byte VK_MENU = 0x12;
 
+    public static int interactionDelay = 30;
+    public static int keypressDelay = 45;
+
     public static void PressKey(byte keyCode, int delay = 45)
     {
         keybd_event(keyCode, (byte)MapVirtualKey(keyCode, 0), 0, 0);
-
-        if (delay > 0)
-        {
-            Thread.Sleep(delay);
-        }
-
+        if (delay > 0) Thread.Sleep(delay);
         keybd_event(keyCode, (byte)MapVirtualKey(keyCode, 0), KEYEVENTF_KEYUP, 0);
     }
 
@@ -37,16 +35,16 @@ public class KeyPresser
         PressKey((byte)key, delay);
     }
 
-    public static void PressSpace(int delay = 45)
+    public static void PressSpace()
     {
-        PressKey(Keys.Space, delay);
+        PressKey(Keys.Space, keypressDelay);
     }
 
-    public static void MoveCamera(int delay = 45, int delayBetween = 30)
+    public static void MoveCamera()
     {
-        PressKey(Keys.I, delay); // Zoom in
-        Thread.Sleep(delayBetween);
-        PressKey(Keys.O, delay); // Zoom out
+        PressKey(Keys.I, keypressDelay); // Zoom in
+        Thread.Sleep(interactionDelay);
+        PressKey(Keys.O, keypressDelay); // Zoom out
     }
 
     private static void OldPressSpace()
