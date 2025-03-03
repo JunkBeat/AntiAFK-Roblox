@@ -26,7 +26,7 @@
   </tr>
 </table>
 
-# 🎮 AntiAFK Modes 🎮
+# AntiAFK Modes
 
 ## 🚀 High-Performance Mode (for ~1-5 Instances): 
 - Launch your Roblox windows.
@@ -59,6 +59,10 @@
 - Reduce your screen brightness.
 - In your system settings, set your screen to turn off after 1 minute of inactivity.
 - Click "Open Screensaver" to make the screen completely black. (Note: moving the mouse will dismiss the screensaver!)
+
+## 🔎 Problem Solving:
+- If the Roblox window fails to focus in time or key presses don't register properly, try increasing the delay in the `settings.json` file (automatically created after the first launch). Restart the program for the changes to take effect.
+- You can also change Action - Camera Shift is more reliable as it performs more interactions with the Roblox window.
 
 # Feedback
 If you encounter any bugs, please feel free to report them [here](https://github.com/JunkBeat/AntiAFK-Roblox/issues).
