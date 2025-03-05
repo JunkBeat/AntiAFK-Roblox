@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace RBX_AntiAFK.SystemInterop;
+namespace RBX_AntiAFK.Core;
 
 class WindowInfo(IntPtr handle, string title)
 {

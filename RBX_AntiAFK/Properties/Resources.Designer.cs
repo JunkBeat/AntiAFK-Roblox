@@ -73,16 +73,6 @@ namespace RBX_AntiAFK.Properties {
         /// <summary>
         ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap GithubImage {
-            get {
-                object obj = ResourceManager.GetObject("GithubImage", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
-        /// </summary>
         internal static System.Drawing.Bitmap ProjectImage {
             get {
                 object obj = ResourceManager.GetObject("ProjectImage", resourceCulture);

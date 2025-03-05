@@ -10,9 +10,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.Runtime.Versioning;
 using System.Reflection;
-using RBX_AntiAFK.Input;
-using RBX_AntiAFK.SystemInterop;
-using RBX_AntiAFK.Enums;
+using RBX_AntiAFK.Core;
 
 namespace RBX_AntiAFK;
 

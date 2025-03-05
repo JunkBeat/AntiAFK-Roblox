@@ -5,9 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using RBX_AntiAFK.Enums;
 
-namespace RBX_AntiAFK;
+namespace RBX_AntiAFK.Core;
 
 public class Settings
 {
