@@ -272,7 +272,7 @@ class Program
     {
         allowNotifications = true;
 
-        if (screensaverForm?.InvokeRequired ?? false)
+        if (screensaverForm?.InvokeRequired == false)
         {
             screensaverForm.Invoke(new Action(() =>
             {
