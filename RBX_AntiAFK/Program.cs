@@ -159,7 +159,7 @@ class Program
             new ToolStripMenuItem("Open Screensaver [Night Farm]", null, (s, e) => OpenScreensaver()),
             new ToolStripMenuItem("Test Anti-AFK move", null, async (s, e) => await TestMoveAsync()),
             new ToolStripMenuItem("About", null, (s, e) => ShowAbout()),
-            new ToolStripMenuItem("Exit", null, (s, e) => Exit())
+            new ToolStripMenuItem("Exit", null, async (s, e) => await ExitAsync())
         ]);
 
         return menu;
@@ -272,11 +272,18 @@ class Program
     {
         allowNotifications = true;
 
-        if (screensaverForm != null && !screensaverForm.IsDisposed)
+        if (screensaverForm?.InvokeRequired ?? false)
         {
-            screensaverForm.Close();
-            screensaverForm.Dispose();
-            screensaverForm = null;
+            screensaverForm.Invoke(new Action(() =>
+            {
+                screensaverForm.Close();
+                screensaverForm.Dispose();
+            }));
+        }
+        else
+        {
+            screensaverForm?.Close();
+            screensaverForm?.Dispose();
         }
     }
 
@@ -416,13 +423,24 @@ class Program
         }
     }
 
-    private static void Exit()
+    private static async Task ExitAsync()
     {
-        cts?.Cancel();
-        RepairWindows();
-        SaveSettings();
-        trayIcon.Visible = false;
-        Application.Exit();
+        try
+        {
+            await StopAfkAsync();
+            RepairWindows();
+            SaveSettings();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error during exit: {ex}");
+            MessageBox.Show($"Error during exit: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            trayIcon.Visible = false;
+            Application.Exit();
+        }
     }
 
     private static async Task TestMoveAsync()
@@ -514,7 +532,6 @@ class Program
             await SleepAsync(TimeSpan.FromMinutes(15), token);
         }
     }
-
 
     private static void ShowRoblox()
     {
