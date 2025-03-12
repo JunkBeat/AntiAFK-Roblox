@@ -46,6 +46,9 @@ class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
+        Form hiddenForm = new Form { ShowInTaskbar = false, WindowState = FormWindowState.Minimized };
+        hiddenForm.Load += (_, _) => hiddenForm.Hide();
+
         trayIcon = new NotifyIcon
         {
             Text = "Anti-AFK RBX",
@@ -58,7 +61,7 @@ class Program
 
         InitializeEvents();
         LoadSettings();
-        Application.Run();
+        Application.Run(hiddenForm);
     }
 
     private static ContextMenuStrip CreateTrayMenu()
@@ -145,7 +148,7 @@ class Program
         var menu = new ContextMenuStrip();
 
         startAntiAfkMenuItem = new ToolStripMenuItem("▶️ Start Anti-AFK", null, (s, e) => StartAfk()) { Enabled = true };
-        stopAntiAfkMenuItem = new ToolStripMenuItem("■ Stop Anti-AFK", null, async (s, e) => await StopAfkAsync()) { Enabled = false };
+        stopAntiAfkMenuItem = new ToolStripMenuItem("■ Stop Anti-AFK", null, (s, e) => StopAfk()) { Enabled = false };
 
         menu.Items.AddRange([
             startAntiAfkMenuItem,
@@ -157,9 +160,9 @@ class Program
             new ToolStripMenuItem("Hide Roblox", null, (s, e) => HideRoblox()),
             new ToolStripSeparator(),
             new ToolStripMenuItem("Open Screensaver [Night Farm]", null, (s, e) => OpenScreensaver()),
-            new ToolStripMenuItem("Test Anti-AFK move", null, async (s, e) => await TestMoveAsync()),
+            new ToolStripMenuItem("Test Anti-AFK move", null, (s, e) => TestMove()),
             new ToolStripMenuItem("About", null, (s, e) => ShowAbout()),
-            new ToolStripMenuItem("Exit", null, async (s, e) => await ExitAsync())
+            new ToolStripMenuItem("Exit", null, (s, e) => Exit())
         ]);
 
         return menu;
@@ -298,7 +301,7 @@ class Program
 
         cts = new CancellationTokenSource();
 
-        _uiContext!.Post(_ =>
+        _uiContext?.Post(_ =>
         {
             startAntiAfkMenuItem.Enabled = false;
             stopAntiAfkMenuItem.Enabled = true;
@@ -308,34 +311,23 @@ class Program
         _afkTask = Task.Run(() => AfkLoopAsync(cts.Token));
     }
 
-    private static async Task StopAfkAsync()
+    private static void StopAfk()
     {
         if (cts != null)
         {
             cts.Cancel();
-
             try
             {
-                if (_afkTask != null)
-                {
-                    await _afkTask; // Wait for the task to complete
-                }
+                _afkTask?.Wait();
             }
-            catch (OperationCanceledException)
-            {
-                // Handle the cancellation (but this is already done in AfkLoop)
-            }
-            finally
-            {
-                cts.Dispose();
-                cts = null;
-                _afkTask = null;
-            }
+            catch (AggregateException) { }
+            cts.Dispose();
+            cts = null;
         }
 
         RepairWindows();
 
-        _uiContext!.Post(_ =>
+        _uiContext?.Post(__ =>
         {
             startAntiAfkMenuItem.Enabled = true;
             stopAntiAfkMenuItem.Enabled = false;
@@ -409,26 +401,11 @@ class Program
         aboutForm.ShowDialog();
     }
 
-    private static void RepairWindows()
-    {
-        foreach (var win in WinManager.GetAllWindows())
-        {
-            if (!win.IsVisible)
-            {
-                win.Minimize();
-                win.Show();
-            }
-
-            win.SetTransparency(255);
-        }
-    }
-
-    private static async Task ExitAsync()
+    private static void Exit()
     {
         try
         {
-            await StopAfkAsync();
-            RepairWindows();
+            StopAfk();
             SaveSettings();
         }
         catch (Exception ex)
@@ -443,149 +420,178 @@ class Program
         }
     }
 
-    private static async Task TestMoveAsync()
+    private static void TestMove()
     {
-        for (int i = 0; i < 3; i++)
+        var windows = WinManager.GetVisibleWindows();
+
+        if (windows.Any())
         {
-            foreach (var win in WinManager.GetVisibleWindows())
+            var firstWindow = windows.First();
+
+            for (int i = 0; i < 3; i++)
             {
-                if (win.IsMinimized) win.Restore();
-                win.Activate();
-                await Task.Delay(interactionDelay);
+                if (firstWindow.IsMinimized) firstWindow.Restore();
+                firstWindow.Activate();
+                Thread.Sleep(interactionDelay);
                 KeyPresser.PressSpace();
-                await Task.Delay(interactionDelay);
+                Thread.Sleep(interactionDelay);
             }
-        }
+        }   
     }
 
     private static async Task AfkLoopAsync(CancellationToken token)
     {
         while (!token.IsCancellationRequested)
         {
-            var userWin = WinManager.GetActiveWindow();
-            var windows = WinManager.GetAllWindows();
-
-            if (!windows.Any())
+            try
             {
-                await SleepAsync(TimeSpan.FromSeconds(30), token);
-                continue;
-            }
+                var userWin = WinManager.GetActiveWindow();
+                var windows = WinManager.GetAllWindows();
 
-            ActionTypeEnum selectedAction = ActionTypeEnum.Jump;
-            bool enableMaximization = false;
-            int maximizationDelaySec = 0;
-            bool shouldHideWindow = false;
-
-            await Task.Run(() =>
-            {
-                selectedAction = ReadSetting(s => s.ActionType);
-                enableMaximization = ReadSetting(s => s.EnableWindowMaximization);
-                maximizationDelaySec = ReadSetting(s => s.WindowMaximizationDelaySeconds);
-                shouldHideWindow = ReadSetting(s => s.HideWindowContentsOnMaximizing);
-            });
-
-            if (enableMaximization && allowNotifications)
-            {
-                _uiContext!.Send(_ => ShowToast("Roblox is opening soon", "Anti-AFK RBX", 2), null);
-                await SleepAsync(3000, token);
-            }
-
-            foreach (var robloxWin in windows.Where(w => w.IsValidWindow))
-            {
-                bool wasMinimized = robloxWin.IsMinimized;
-
-                if (enableMaximization)
+                if (!windows.Any())
                 {
-                    if (shouldHideWindow) robloxWin.SetTransparency(0);
-                    if (wasMinimized) robloxWin.Restore();
-                    robloxWin.Activate();
-                    await SleepAsync(TimeSpan.FromSeconds(maximizationDelaySec), token);
-                    if (wasMinimized) robloxWin.Minimize();
+                    await Task.Delay(TimeSpan.FromSeconds(30), token);
+                    continue;
                 }
 
-                // Perform three times for greater reliability
-                for (int i = 0; i < 3; i++)
-                {
-                    robloxWin.Activate();
-                    await SleepAsync(interactionDelay, token);
+                ActionTypeEnum selectedAction = ActionTypeEnum.Jump;
+                bool enableMaximization = false;
+                int maximizationDelaySec = 0;
+                bool shouldHideWindow = false;
 
-                    switch (selectedAction)
+                try
+                {
+                    await Task.Run(() =>
                     {
-                        case ActionTypeEnum.Jump:
-                            KeyPresser.PressSpace();
-                            break;
-                        case ActionTypeEnum.CameraShift:
-                            KeyPresser.MoveCamera();
-                            break;
-                        default:
-                            Console.WriteLine($"Unknown action: {selectedAction}");
-                            KeyPresser.PressSpace();
-                            break;
-                    }
-                    await SleepAsync(interactionDelay, token);
+                        selectedAction = ReadSetting(s => s.ActionType);
+                        enableMaximization = ReadSetting(s => s.EnableWindowMaximization);
+                        maximizationDelaySec = ReadSetting(s => s.WindowMaximizationDelaySeconds);
+                        shouldHideWindow = ReadSetting(s => s.HideWindowContentsOnMaximizing);
+                    }, token);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
                 }
 
-                if (userWin?.IsValidWindow == true) userWin.Activate();
-                robloxWin.SetTransparency(255);
-            }
+                if (enableMaximization && allowNotifications)
+                {
+                    _uiContext!.Send(_ => ShowToast("Roblox is opening soon", "Anti-AFK RBX", 2), null);
+                    await Task.Delay(TimeSpan.FromSeconds(3), token);
+                }
 
-            await SleepAsync(TimeSpan.FromMinutes(15), token);
+                foreach (var robloxWin in windows.Where(w => w.IsValidWindow))
+                {
+                    bool wasMinimized = robloxWin.IsMinimized;
+
+                    if (enableMaximization)
+                    {
+                        if (shouldHideWindow) robloxWin.SetTransparency(0);
+                        if (wasMinimized) robloxWin.Restore();
+                        robloxWin.Activate();
+                        await Task.Delay(TimeSpan.FromSeconds(maximizationDelaySec), token);
+                        if (wasMinimized) robloxWin.Minimize();
+                    }
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        robloxWin.Activate();
+                        await Task.Delay(interactionDelay, token);
+
+                        switch (selectedAction)
+                        {
+                            case ActionTypeEnum.Jump:
+                                KeyPresser.PressSpace();
+                                break;
+                            case ActionTypeEnum.CameraShift:
+                                KeyPresser.MoveCamera();
+                                break;
+                            default:
+                                Console.WriteLine($"Unknown action: {selectedAction}");
+                                KeyPresser.PressSpace();
+                                break;
+                        }
+
+                        await Task.Delay(interactionDelay, token);
+                    }
+
+                    if (userWin?.IsValidWindow == true) userWin.Activate();
+                    robloxWin.SetTransparency(255);
+                }
+
+                await Task.Delay(TimeSpan.FromMinutes(15), token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
         }
     }
 
     private static void ShowRoblox()
     {
-        var windows = WinManager.GetHiddenWindows();
+        Task.Run(() =>
+        {
+            var windows = WinManager.GetHiddenWindows();
 
-        if (windows.Count != 0)
-        {
-            foreach (var win in windows)
+            if (windows.Count != 0)
             {
-                win.Minimize();
-                win.Show();
+                foreach (var win in windows)
+                {
+                    win.Minimize();
+                    win.Show();
+                }
             }
-        }
-        else
-        {
-            MessageBox.Show("Hidden Roblox window not found.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        }
+            else
+            {
+                _uiContext?.Post(_ =>
+                {
+                    MessageBox.Show("Hidden Roblox window not found.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }, null);
+            }
+        });
     }
 
     private static void HideRoblox()
     {
-        bool foundMinimized = false;
-
-        foreach (var win in WinManager.GetVisibleWindows())
+        Task.Run(() =>
         {
-            // Apply to minimized only 
-            if (win.IsMinimized)
+            bool foundMinimized = false;
+
+            foreach (var win in WinManager.GetVisibleWindows())
             {
-                foundMinimized = true;
-                win.Restore();
-                win.Hide();
+                if (win.IsMinimized)
+                {
+                    foundMinimized = true;
+                    win.Restore();
+                    win.Hide();
+                }
             }
-        }
 
-        if (!foundMinimized)
-        {
-            MessageBox.Show("Minimized Roblox window not found.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        }
+            if (!foundMinimized)
+            {
+                _uiContext?.Post(_ =>
+                {
+                    MessageBox.Show("Minimized Roblox window not found.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }, null);
+            }
+        });
     }
 
-    private static async Task SleepAsync(TimeSpan delay, CancellationToken token)
+    private static void RepairWindows()
     {
-        try
+        Task.Run(() =>
         {
-            await Task.Delay(delay, token);
-        }
-        catch (OperationCanceledException)
-        {
-            // Do nothing. The cancellation is handled by the caller.
-        }
-    }
+            foreach (var win in WinManager.GetAllWindows())
+            {
+                if (!win.IsVisible)
+                {
+                    win.Minimize();
+                    win.Show();
+                }
 
-    private static async Task SleepAsync(int milliseconds, CancellationToken token)
-    {
-        await SleepAsync(TimeSpan.FromMilliseconds(milliseconds), token);
+                win.SetTransparency(255);
+            }
+        });
     }
 }
