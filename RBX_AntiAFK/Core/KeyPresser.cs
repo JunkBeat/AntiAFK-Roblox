@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -17,46 +16,39 @@ public class KeyPresser
     private static extern uint MapVirtualKey(uint uCode, uint uMapType);
 
     private const uint KEYEVENTF_KEYUP = 0x0002;
-    private const byte VK_SPACE = 0x20;
-    private const byte VK_MENU = 0x12;
 
-    public static int interactionDelay = 30;
-    public static int keypressDelay = 45;
+    private int _interactionDelay = 30;
+    private int _keypressDelay = 45;
 
-    public static void PressKey(byte keyCode, int delay = 45)
+    public int InteractionDelay
     {
-        keybd_event(keyCode, (byte)MapVirtualKey(keyCode, 0), 0, 0);
-        if (delay > 0) Thread.Sleep(delay);
-        keybd_event(keyCode, (byte)MapVirtualKey(keyCode, 0), KEYEVENTF_KEYUP, 0);
+        get => _interactionDelay;
+        set => _interactionDelay = value > 0 ? value : 30;
     }
 
-    public static void PressKey(Keys key, int delay = 45)
+    public int KeypressDelay
     {
-        PressKey((byte)key, delay);
+        get => _keypressDelay;
+        set => _keypressDelay = value > 0 ? value : 45;
     }
 
-    public static void PressSpace()
+    public void PressKey(Keys key)
     {
-        PressKey(Keys.Space, keypressDelay);
+        byte bKey = (byte)key;
+        keybd_event(bKey, (byte)MapVirtualKey(bKey, 0), 0, 0);
+        Thread.Sleep(KeypressDelay);
+        keybd_event(bKey, (byte)MapVirtualKey(bKey, 0), KEYEVENTF_KEYUP, 0);
     }
 
-    public static void MoveCamera()
+    public void PressSpace()
     {
-        PressKey(Keys.I, keypressDelay); // Zoom in
-        Thread.Sleep(interactionDelay);
-        PressKey(Keys.O, keypressDelay); // Zoom out
+        PressKey(Keys.Space);
     }
 
-    private static void OldPressSpace()
+    public void MoveCamera()
     {
-        keybd_event(VK_MENU, 0, 0, 0);
-        Thread.Sleep(15);
-        keybd_event(VK_SPACE, 0, 0, 0);
-        Thread.Sleep(15);
-        keybd_event(VK_SPACE, 0, KEYEVENTF_KEYUP, 0);
-        keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, 0);
-        Thread.Sleep(15);
-        keybd_event(VK_MENU, 0, 0, 0);
-        keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, 0);
+        PressKey(Keys.I); // Zoom in
+        Thread.Sleep(InteractionDelay);
+        PressKey(Keys.O); // Zoom out
     }
 }

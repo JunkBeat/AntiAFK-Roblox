@@ -67,4 +67,10 @@ public class Settings
             Console.WriteLine($"Error saving settings: {ex.Message}");
         }
     }
+
+    public Settings Clone()
+    {
+        var json = JsonConvert.SerializeObject(this);
+        return JsonConvert.DeserializeObject<Settings>(json)!;
+    }
 }

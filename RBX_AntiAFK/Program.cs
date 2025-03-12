@@ -16,6 +16,7 @@ namespace RBX_AntiAFK;
 
 class Program
 {
+    private static readonly KeyPresser keyPresser = new();
     private static NotifyIcon trayIcon = new();
     private static CancellationTokenSource? cts;
     private static SynchronizationContext? _uiContext;
@@ -46,9 +47,6 @@ class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        Form hiddenForm = new Form { ShowInTaskbar = false, WindowState = FormWindowState.Minimized };
-        hiddenForm.Load += (_, _) => hiddenForm.Hide();
-
         trayIcon = new NotifyIcon
         {
             Text = "Anti-AFK RBX",
@@ -61,7 +59,7 @@ class Program
 
         InitializeEvents();
         LoadSettings();
-        Application.Run(hiddenForm);
+        Application.Run();
     }
 
     private static ContextMenuStrip CreateTrayMenu()
@@ -203,8 +201,8 @@ class Program
                 actionTypeComboBox.SelectedIndex = index;
             }
 
-            KeyPresser.keypressDelay = settings.DelayBetweenKeyPressMilliseconds;
-            KeyPresser.interactionDelay = interactionDelay = settings.DelayBeforeWindowInteractionMilliseconds;
+            keyPresser.KeypressDelay = settings.DelayBetweenKeyPressMilliseconds;
+            keyPresser.InteractionDelay = interactionDelay = settings.DelayBeforeWindowInteractionMilliseconds;
         }
     }
 
@@ -216,11 +214,11 @@ class Program
         }
     }
 
-    private static T ReadSetting<T>(Func<Settings, T> readAction)
+    private static Settings GetSettingsCopy()
     {
         lock (settingsLock)
         {
-            return readAction(settings);
+            return settings.Clone();
         }
     }
 
@@ -236,7 +234,7 @@ class Program
     {
         allowNotifications = false;
 
-        foreach (var win in WinManager.GetVisibleWindows())
+        foreach (var win in WinManager.GetVisibleRobloxWindows())
         {
             win.SetNoTopMost();
         }
@@ -264,7 +262,7 @@ class Program
         if (deltaX > movementThreshold || deltaY > movementThreshold)
         {
             CloseScreensaver();
-            foreach (var win in WinManager.GetVisibleWindows())
+            foreach (var win in WinManager.GetVisibleRobloxWindows())
             {
                 win.SetTop();
             }
@@ -292,7 +290,7 @@ class Program
 
     private static void StartAfk()
     {
-        var windows = WinManager.GetAllWindows();
+        var windows = WinManager.GetAllRobloxWindows();
         if (windows.Count == 0)
         {
             MessageBox.Show("Roblox window not found!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -422,9 +420,9 @@ class Program
 
     private static void TestMove()
     {
-        var windows = WinManager.GetVisibleWindows();
+        var windows = WinManager.GetVisibleRobloxWindows();
 
-        if (windows.Any())
+        if (windows.Count != 0)
         {
             var firstWindow = windows.First();
 
@@ -433,106 +431,17 @@ class Program
                 if (firstWindow.IsMinimized) firstWindow.Restore();
                 firstWindow.Activate();
                 Thread.Sleep(interactionDelay);
-                KeyPresser.PressSpace();
+                keyPresser.PressSpace();
                 Thread.Sleep(interactionDelay);
             }
         }   
-    }
-
-    private static async Task AfkLoopAsync(CancellationToken token)
-    {
-        while (!token.IsCancellationRequested)
-        {
-            try
-            {
-                var userWin = WinManager.GetActiveWindow();
-                var windows = WinManager.GetAllWindows();
-
-                if (!windows.Any())
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(30), token);
-                    continue;
-                }
-
-                ActionTypeEnum selectedAction = ActionTypeEnum.Jump;
-                bool enableMaximization = false;
-                int maximizationDelaySec = 0;
-                bool shouldHideWindow = false;
-
-                try
-                {
-                    await Task.Run(() =>
-                    {
-                        selectedAction = ReadSetting(s => s.ActionType);
-                        enableMaximization = ReadSetting(s => s.EnableWindowMaximization);
-                        maximizationDelaySec = ReadSetting(s => s.WindowMaximizationDelaySeconds);
-                        shouldHideWindow = ReadSetting(s => s.HideWindowContentsOnMaximizing);
-                    }, token);
-                }
-                catch (OperationCanceledException)
-                {
-                    return;
-                }
-
-                if (enableMaximization && allowNotifications)
-                {
-                    _uiContext!.Send(_ => ShowToast("Roblox is opening soon", "Anti-AFK RBX", 2), null);
-                    await Task.Delay(TimeSpan.FromSeconds(3), token);
-                }
-
-                foreach (var robloxWin in windows.Where(w => w.IsValidWindow))
-                {
-                    bool wasMinimized = robloxWin.IsMinimized;
-
-                    if (enableMaximization)
-                    {
-                        if (shouldHideWindow) robloxWin.SetTransparency(0);
-                        if (wasMinimized) robloxWin.Restore();
-                        robloxWin.Activate();
-                        await Task.Delay(TimeSpan.FromSeconds(maximizationDelaySec), token);
-                        if (wasMinimized) robloxWin.Minimize();
-                    }
-
-                    for (int i = 0; i < 3; i++)
-                    {
-                        robloxWin.Activate();
-                        await Task.Delay(interactionDelay, token);
-
-                        switch (selectedAction)
-                        {
-                            case ActionTypeEnum.Jump:
-                                KeyPresser.PressSpace();
-                                break;
-                            case ActionTypeEnum.CameraShift:
-                                KeyPresser.MoveCamera();
-                                break;
-                            default:
-                                Console.WriteLine($"Unknown action: {selectedAction}");
-                                KeyPresser.PressSpace();
-                                break;
-                        }
-
-                        await Task.Delay(interactionDelay, token);
-                    }
-
-                    if (userWin?.IsValidWindow == true) userWin.Activate();
-                    robloxWin.SetTransparency(255);
-                }
-
-                await Task.Delay(TimeSpan.FromMinutes(15), token);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
-        }
     }
 
     private static void ShowRoblox()
     {
         Task.Run(() =>
         {
-            var windows = WinManager.GetHiddenWindows();
+            var windows = WinManager.GetHiddenRobloxWindows();
 
             if (windows.Count != 0)
             {
@@ -558,7 +467,7 @@ class Program
         {
             bool foundMinimized = false;
 
-            foreach (var win in WinManager.GetVisibleWindows())
+            foreach (var win in WinManager.GetVisibleRobloxWindows())
             {
                 if (win.IsMinimized)
                 {
@@ -582,7 +491,7 @@ class Program
     {
         Task.Run(() =>
         {
-            foreach (var win in WinManager.GetAllWindows())
+            foreach (var win in WinManager.GetAllRobloxWindows())
             {
                 if (!win.IsVisible)
                 {
@@ -593,5 +502,95 @@ class Program
                 win.SetTransparency(255);
             }
         });
+    }
+
+    private static async Task AfkLoopAsync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            try
+            {
+                await ProcessLoopIterationAsync(token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+        }
+    }
+
+    private static async Task ProcessLoopIterationAsync(CancellationToken token)
+    {
+        var userWin = WinManager.GetActiveWindow();
+        var windows = WinManager.GetAllRobloxWindows();
+
+        if (windows.Count == 0)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(30), token);
+            return;
+        }
+
+        await ProcessWindowsAsync(windows, userWin, token);
+
+        await Task.Delay(TimeSpan.FromMinutes(15), token);
+    }
+
+    private static async Task ProcessWindowsAsync(List<WindowInfo> windows, WindowInfo? userWin, CancellationToken token)
+    {
+        var s = GetSettingsCopy();
+        ActionTypeEnum selectedAction = s.ActionType;
+        bool enableMaximization = s.EnableWindowMaximization;
+        int maximizationDelaySec = s.WindowMaximizationDelaySeconds;
+        bool shouldHideWindow = s.HideWindowContentsOnMaximizing;
+
+        if (enableMaximization && allowNotifications)
+        {
+            _uiContext!.Post(_ => ShowToast("Roblox is opening soon", "Anti-AFK RBX", 2), null);
+            await Task.Delay(TimeSpan.FromSeconds(3), token);
+        }
+
+        foreach (var robloxWin in windows.Where(w => w.IsValidWindow))
+        {
+            bool wasMinimized = robloxWin.IsMinimized;
+
+            if (enableMaximization)
+            {
+                if (shouldHideWindow) robloxWin.SetTransparency(0);
+                if (wasMinimized) robloxWin.Restore();
+                robloxWin.Activate();
+                await Task.Delay(TimeSpan.FromSeconds(maximizationDelaySec), token);
+                if (wasMinimized) robloxWin.Minimize();
+            }
+
+            await PerformActionsOnWindowAsync(robloxWin, selectedAction, token);
+
+            if (userWin?.IsValidWindow == true) userWin.Activate();
+            robloxWin.SetTransparency(255);
+        }
+    }
+
+    private static async Task PerformActionsOnWindowAsync(WindowInfo robloxWin, ActionTypeEnum selectedAction, CancellationToken token)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            robloxWin.Activate();
+            await Task.Delay(interactionDelay, token);
+
+            switch (selectedAction)
+            {
+                case ActionTypeEnum.Jump:
+                    keyPresser.PressSpace();
+                    break;
+                case ActionTypeEnum.CameraShift:
+                    keyPresser.MoveCamera();
+                    break;
+                default:
+                    Console.WriteLine($"Unknown action: {selectedAction}");
+                    keyPresser.PressSpace();
+                    break;
+            }
+
+            await Task.Delay(interactionDelay, token);
+        }
     }
 }

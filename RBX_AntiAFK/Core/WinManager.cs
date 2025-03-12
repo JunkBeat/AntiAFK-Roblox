@@ -174,21 +174,21 @@ class WinManager
         return true;
     }
 
-    public static List<WindowInfo> GetVisibleWindows()
+    public static List<WindowInfo> GetVisibleRobloxWindows()
     {
         return GetWindowsByProcessName("RobloxPlayerBeta")
             .Where(w => w.IsVisible && w.Title == "Roblox")
             .ToList();
     }
 
-    public static List<WindowInfo> GetHiddenWindows()
+    public static List<WindowInfo> GetHiddenRobloxWindows()
     {
         return GetWindowsByProcessName("RobloxPlayerBeta")
            .Where(w => !w.IsVisible && w.Title == "Roblox")
            .ToList();
     }
 
-    public static List<WindowInfo> GetAllWindows()
+    public static List<WindowInfo> GetAllRobloxWindows()
     {
         return GetWindowsByProcessName("RobloxPlayerBeta")
             .Where(w => w.Title == "Roblox")
