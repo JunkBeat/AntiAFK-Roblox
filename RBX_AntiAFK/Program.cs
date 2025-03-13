@@ -166,6 +166,19 @@ class Program
         return menu;
     }
 
+    private static async void StopAfk()
+    {
+        try
+        {
+            await StopAfkAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in StopAfk: {ex}");
+            MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
     private static void InitializeEvents()
     {
         enableMaximizationCheckBox.CheckedChanged += OnSettingsChanged;
@@ -262,10 +275,14 @@ class Program
         if (deltaX > movementThreshold || deltaY > movementThreshold)
         {
             CloseScreensaver();
-            foreach (var win in WinManager.GetVisibleRobloxWindows())
+
+            Task.Run(() =>
             {
-                win.SetTop();
-            }
+                foreach (var win in WinManager.GetVisibleRobloxWindows())
+                {
+                    win.SetTop();
+                }
+            });
         }
     }
 
@@ -273,18 +290,21 @@ class Program
     {
         allowNotifications = true;
 
-        if (screensaverForm?.InvokeRequired == false)
+        if (screensaverForm != null)
         {
-            screensaverForm.Invoke(new Action(() =>
+            if (screensaverForm.InvokeRequired == false)
+            {
+                screensaverForm.Invoke(new Action(() =>
+                {
+                    screensaverForm.Close();
+                    screensaverForm.Dispose();
+                }));
+            }
+            else
             {
                 screensaverForm.Close();
                 screensaverForm.Dispose();
-            }));
-        }
-        else
-        {
-            screensaverForm?.Close();
-            screensaverForm?.Dispose();
+            }
         }
     }
 
@@ -309,7 +329,7 @@ class Program
         _afkTask = Task.Run(() => AfkLoopAsync(cts.Token));
     }
 
-    private static void StopAfk()
+    private static async Task StopAfkAsync()
     {
         if (cts != null)
         {
@@ -323,7 +343,7 @@ class Program
             cts = null;
         }
 
-        RepairWindows();
+        await RepairWindowsAsync();
 
         _uiContext?.Post(__ =>
         {
@@ -399,11 +419,11 @@ class Program
         aboutForm.ShowDialog();
     }
 
-    private static void Exit()
+    private static async void Exit()
     {
         try
         {
-            StopAfk();
+            await StopAfkAsync();
             SaveSettings();
         }
         catch (Exception ex)
@@ -420,43 +440,59 @@ class Program
 
     private static void TestMove()
     {
-        var windows = WinManager.GetVisibleRobloxWindows();
-
-        if (windows.Count != 0)
+        Task.Run(() =>
         {
-            var firstWindow = windows.First();
-
-            for (int i = 0; i < 3; i++)
+            try
             {
-                if (firstWindow.IsMinimized) firstWindow.Restore();
-                firstWindow.Activate();
-                Thread.Sleep(interactionDelay);
-                keyPresser.PressSpace();
-                Thread.Sleep(interactionDelay);
+                var windows = WinManager.GetVisibleRobloxWindows();
+
+                if (windows.Count != 0)
+                {
+                    var firstWindow = windows.First();
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        if (firstWindow.IsMinimized) firstWindow.Restore();
+                        firstWindow.Activate();
+                        Thread.Sleep(interactionDelay);
+                        keyPresser.PressSpace();
+                        Thread.Sleep(interactionDelay);
+                    }
+                }
             }
-        }   
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in TestMove: {ex}");
+                _uiContext?.Post(_ => MessageBox.Show($"Error in TestMove: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error), null);
+            }
+        });
     }
 
     private static void ShowRoblox()
     {
         Task.Run(() =>
         {
-            var windows = WinManager.GetHiddenRobloxWindows();
-
-            if (windows.Count != 0)
+            try
             {
-                foreach (var win in windows)
+                var windows = WinManager.GetHiddenRobloxWindows();
+
+                if (windows.Count != 0)
                 {
-                    win.Minimize();
-                    win.Show();
+                    foreach (var win in windows)
+                    {
+                        win.Minimize();
+                        win.Show();
+                    }
+                }
+                else
+                {
+                    _uiContext?.Post(_ => MessageBox.Show("Hidden Roblox window not found.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning), null);
                 }
             }
-            else
+            catch (Exception ex)
             {
-                _uiContext?.Post(_ =>
-                {
-                    MessageBox.Show("Hidden Roblox window not found.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }, null);
+                Console.WriteLine($"Error in ShowRoblox: {ex}");
+                _uiContext?.Post(_ => MessageBox.Show($"Error in ShowRoblox: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error), null);
             }
         });
     }
@@ -465,42 +501,56 @@ class Program
     {
         Task.Run(() =>
         {
-            bool foundMinimized = false;
-
-            foreach (var win in WinManager.GetVisibleRobloxWindows())
+            try
             {
-                if (win.IsMinimized)
+                bool foundMinimized = false;
+
+                foreach (var win in WinManager.GetVisibleRobloxWindows())
                 {
-                    foundMinimized = true;
-                    win.Restore();
-                    win.Hide();
+                    if (win.IsMinimized)
+                    {
+                        foundMinimized = true;
+                        win.Restore();
+                        win.Hide();
+                    }
+                }
+
+                if (!foundMinimized)
+                {
+                    _uiContext?.Post(_ => MessageBox.Show("Minimized Roblox window not found.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning), null);
                 }
             }
-
-            if (!foundMinimized)
+            catch (Exception ex)
             {
-                _uiContext?.Post(_ =>
-                {
-                    MessageBox.Show("Minimized Roblox window not found.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }, null);
+                Console.WriteLine($"Error in HideRoblox: {ex}");
+                _uiContext?.Post(_ => MessageBox.Show($"Error in HideRoblox: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error), null);
             }
         });
     }
 
-    private static void RepairWindows()
+    private static async Task RepairWindowsAsync()
     {
-        Task.Run(() =>
+        await Task.Run(() =>
         {
-            foreach (var win in WinManager.GetAllRobloxWindows())
+            try
             {
-                if (!win.IsVisible)
+                foreach (var win in WinManager.GetAllRobloxWindows())
                 {
-                    win.Minimize();
-                    win.Show();
-                }
+                    if (!win.IsVisible)
+                    {
+                        win.Minimize();
+                        win.Show();
+                    }
 
-                win.SetTransparency(255);
+                    win.SetTransparency(255);
+                }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in RepairWindowsAsync: {ex}");
+                _uiContext?.Post(_ => MessageBox.Show($"Error in RepairWindowsAsync: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error), null);
+            }
+
         });
     }
 
