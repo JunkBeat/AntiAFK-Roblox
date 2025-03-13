@@ -146,7 +146,7 @@ class Program
         var menu = new ContextMenuStrip();
 
         startAntiAfkMenuItem = new ToolStripMenuItem("▶️ Start Anti-AFK", null, (s, e) => StartAfk()) { Enabled = true };
-        stopAntiAfkMenuItem = new ToolStripMenuItem("■ Stop Anti-AFK", null, (s, e) => StopAfk()) { Enabled = false };
+        stopAntiAfkMenuItem = new ToolStripMenuItem("■ Stop Anti-AFK", null, async (s, e) => await StopAfkAsync()) { Enabled = false };
 
         menu.Items.AddRange([
             startAntiAfkMenuItem,
@@ -160,23 +160,10 @@ class Program
             new ToolStripMenuItem("Open Screensaver [Night Farm]", null, (s, e) => OpenScreensaver()),
             new ToolStripMenuItem("Test Anti-AFK move", null, (s, e) => TestMove()),
             new ToolStripMenuItem("About", null, (s, e) => ShowAbout()),
-            new ToolStripMenuItem("Exit", null, (s, e) => Exit())
+            new ToolStripMenuItem("Exit", null, async (s, e) => await ExitAsync())
         ]);
 
         return menu;
-    }
-
-    private static async void StopAfk()
-    {
-        try
-        {
-            await StopAfkAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in StopAfk: {ex}");
-            MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
     }
 
     private static void InitializeEvents()
@@ -419,7 +406,7 @@ class Program
         aboutForm.ShowDialog();
     }
 
-    private static async void Exit()
+    private static async Task ExitAsync()
     {
         try
         {
