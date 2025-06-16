@@ -39,7 +39,7 @@
 
 ## 💤 Energy-Efficient Mode *(Recommended for ~1-15 Instances)*: 
 1. Minimize Roblox windows.
-2. Enable "Open for ... sec" — this briefly brings the window into focus (useful if the game often reboots servers).
+2. Enable "Open for ... sec" — briefly brings the window into focus; set a duration long enough for the window contents to load.
 3. *(optional)* Enable "Hide window contents" to make the window invisible while focused.
 4. You’ll get a notification ~3 seconds before a window comes into focus, so you can pause your work if needed. 
 
